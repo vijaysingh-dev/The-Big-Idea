@@ -1,0 +1,68 @@
+/* Compact heading/paragraph spacing for vault-to-epub.pl output.
+   Kindle's default reader stylesheet gives headings large top/bottom margins
+   that stack up badly once a document has many H1-H4s; this tightens all of
+   that and gives section (H1) "part" pages a title-page look. */
+
+body {
+  margin: 0 5%;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0.6em;
+  margin-bottom: 0.3em;
+  line-height: 1.25;
+  page-break-after: avoid;
+}
+
+/* H1 = a vault section/folder, e.g. "05 -- RAG Systems". With --split-level=2
+   each H1 lands alone on its own chapter file, so styling it as a centered
+   part-title page (rather than a normal heading) is safe everywhere. */
+h1 {
+  font-size: 1.7em;
+  text-align: center;
+  margin-top: 38%;
+  margin-bottom: 0;
+  page-break-before: always;
+}
+
+/* H2 = a note/chapter title. Starts its own chapter file under
+   --split-level=2; page-break-before is a no-op there but keeps things
+   correct if ever rendered without splitting. */
+h2 {
+  font-size: 1.35em;
+  margin-top: 0.9em;
+  page-break-before: always;
+}
+
+h3 { font-size: 1.12em; margin-top: 0.8em; }
+h4 { font-size: 1.0em;  margin-top: 0.7em; }
+h5, h6 { font-size: 1.0em; margin-top: 0.6em; }
+
+p, ul, ol, dl, table, pre, blockquote, figure {
+  margin-top: 0.35em;
+  margin-bottom: 0.35em;
+}
+
+li { margin-top: 0.05em; margin-bottom: 0.05em; }
+li > p { margin-top: 0.15em; margin-bottom: 0.15em; }
+
+hr {
+  margin: 0.7em 0;
+  border: none;
+  border-top: 1px solid currentColor;
+}
+
+blockquote {
+  margin-left: 0;
+  padding-left: 0.8em;
+  border-left: 3px solid currentColor;
+}
+
+pre, code {
+  font-size: 0.85em;
+}
+
+pre {
+  padding: 0.5em;
+  overflow-x: auto;
+}

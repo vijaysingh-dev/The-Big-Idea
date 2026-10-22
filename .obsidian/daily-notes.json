@@ -1,0 +1,6 @@
+{
+  "folder": "Daily Notes",
+  "template": "Templates/{{date}}",
+  "autorun": false,
+  "format": ""
+}
