@@ -1,0 +1,8 @@
+{
+  "cssTheme": "Border",
+  "enabledCssSnippets": [
+    "reduce-spacing",
+    "table-wrap"
+  ],
+  "baseFontSize": 18
+}

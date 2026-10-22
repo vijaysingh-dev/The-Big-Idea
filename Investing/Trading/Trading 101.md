@@ -1,0 +1,4 @@
+- Always use Stop Loss
+- Never use full capital
+- If you don't have valid setup, don't enter. Don't jump in, wait for proper setup
+- 
