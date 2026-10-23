@@ -1,21 +1,10 @@
-## How to use this set (all four files)
+**Up:** [[00 - Index (Interview)]] | **Prev:** [[00 - Index (Interview)]]
 
-| File | Covers | Est. reading |
-|---|---|---|
-| `01-llm-fundamentals.md` | How LLMs work, tokens, attention, inference, training, prompting, model choice | ~40 min |
-| `02-rag.md` | Every RAG stage, embeddings, cosine, HNSW, BM25, hybrid, reranking, evals | ~50 min |
-| `03-agents-and-llmops.md` | Agents, tools, LangGraph, memory, multi-agent, MCP, security, evals, observability, cost | ~50 min |
-| `04-python-backend-system-design.md` | Python internals, asyncio, FastAPI, API/DB/resilience, testing, AI system design | ~50 min |
+---
 
-**Format of every question**
-- **Answer:** what a strong candidate would say, in roughly the order they'd say it.
-- **Likely follow-ups:** where the interviewer goes next, with short answers.
-- **What a strong answer shows:** the signal the interviewer is looking for.
+# 01 — LLM Fundamentals
 
-**On the interview itself.** Good interviewers aren't trying to catch you out. They're trying to find the edge of what you know and see how you think when you get there. Three habits help a lot:
-1. **Start simple, then go deeper.** Give a one-sentence answer, then add layers. Let them choose how far to go.
-2. **Name the tradeoff.** Seniors almost never say "X is best". They say "X when…, Y when…".
-3. **Say "I don't know, but here's how I'd reason about it."** Honest reasoning beats a confident wrong answer, every time.
+> How LLMs work: tokens, attention, inference, training, prompting, and choosing a model.
 
 ---
 
@@ -46,6 +35,8 @@ This is called **autoregressive** generation: each output becomes part of the ne
 
 **What a strong answer shows:** You can explain it simply without hand-waving, and you connect the mechanism to practical behaviour: cost, latency, streaming, hallucination.
 
+**Go deeper:** [[01 - LLM Internals That Matter]] · [[02.3 - Transformer Architecture]]
+
 ---
 
 ### Q2. What is tokenization, and why should an engineer care?
@@ -69,6 +60,8 @@ Why it matters in practice:
 
 **What a strong answer shows:** You treat tokens as the real unit of cost, latency and limits, and you know where they cause surprising behaviour.
 
+**Go deeper:** [[03.1 - Tokens and Tokenization]]
+
 ---
 
 ### Q3. What are embeddings? How are token embeddings different from sentence embeddings?
@@ -86,6 +79,8 @@ An **embedding** is a vector (a list of numbers, e.g. 384 or 1536 of them) that 
 - *What does the dimension number mean?* More dimensions can hold more nuance, but they cost more memory and slower search. Some models support truncating vectors (Matryoshka embeddings, see Part 2).
 
 **What a strong answer shows:** You don't confuse the internal representations of an LLM with the embedding models used for retrieval.
+
+**Go deeper:** [[03.2 - Embeddings and Vector Representations]] · [[02 - Embeddings and Vector Search]]
 
 ---
 
@@ -113,6 +108,8 @@ The key advantage over older **RNNs** (recurrent networks, which read text one w
 - *Where are most of the parameters?* Mostly in the FFN layers, plus the embedding table in smaller models.
 
 **What a strong answer shows:** You can sketch the block from memory and say *why* each piece exists, not just name it.
+
+**Go deeper:** [[02.3 - Transformer Architecture]] · [[02.1 - Neural Networks Intuition]]
 
 ---
 
@@ -148,6 +145,8 @@ Attention(Q, K, V) = softmax(Q·Kᵀ / √d_k) · V
 
 **What a strong answer shows:** You can write the formula, explain the √d scaling and the mask, and connect attention variants to inference cost.
 
+**Go deeper:** [[02.2 - Attention Mechanism]]
+
 ---
 
 ### Q6. Encoder-only, decoder-only, encoder-decoder: what's the difference, and where is each used?
@@ -169,6 +168,8 @@ For RAG this matters directly. Your **embedding model** and **reranker** are usu
 
 **What a strong answer shows:** You map architecture types to the components of a real system.
 
+**Go deeper:** [[02.4 - Encoder vs Decoder vs Encoder-Decoder]]
+
 ---
 
 ### Q7. How does the model know word order? Explain positional encoding.
@@ -188,6 +189,8 @@ Attention by itself is order-blind. It treats the input as a set, so "dog bites 
 
 **What a strong answer shows:** You know attention needs position added, and you know RoPE and relative positions exist and why.
 
+**Go deeper:** [[02.3 - Transformer Architecture]]
+
 ---
 
 ### Q8. What is a Mixture-of-Experts (MoE) model?
@@ -205,6 +208,8 @@ Tradeoffs:
 - Throughput depends on how evenly tokens spread across experts.
 
 **What a strong answer shows:** You understand total vs. active parameters, and that "cheaper compute" doesn't mean "cheaper memory".
+
+**Go deeper:** [[13.4 - Inference Internals]]
 
 ---
 
@@ -234,6 +239,8 @@ Practical settings:
 
 **What a strong answer shows:** You know the mechanics, and you pick settings by task, including knowing that "temperature 0" isn't a determinism guarantee.
 
+**Go deeper:** [[03.8 - Sampling Strategies]]
+
 ---
 
 ### Q10. What is the KV cache? Explain prefill vs. decode.
@@ -257,6 +264,8 @@ Why engineers care:
 
 **What a strong answer shows:** You link model internals to latency, cost and serving decisions. This is one of the clearest signals that someone is senior on the AI side.
 
+**Go deeper:** [[13.1 - Token Economics KV Cache Prefix Caching]] · [[13.4 - Inference Internals]]
+
 ---
 
 ### Q11. What is speculative decoding?
@@ -269,6 +278,8 @@ A small, fast **draft model** guesses several next tokens. The big model then ch
 As an application engineer you rarely implement this, but it explains why some providers get faster without changing quality.
 
 **What a strong answer shows:** Awareness of inference optimisations beyond "use a smaller model".
+
+**Go deeper:** [[13.4 - Inference Internals]]
 
 ---
 
@@ -290,6 +301,8 @@ As an application engineer you rarely implement this, but it explains why some p
 - *Why do models have a knowledge cutoff?* Pretraining data stops at a date. Anything after that has to come from context (RAG or tools).
 
 **What a strong answer shows:** A clear map of the stages and what each one contributes, without overclaiming details of proprietary pipelines.
+
+**Go deeper:** [[02.5 - Pretraining vs Finetuning vs Inference]] · [[04.2 - RLHF and DPO]]
 
 ---
 
@@ -323,6 +336,8 @@ The usual order: prompt → add RAG → add evals → fine-tune only when evals 
 
 **What a strong answer shows:** You default to the cheapest effective option, you have a decision rule, and you're evaluation-driven.
 
+**Go deeper:** [[04.1 - Fine-Tuning Fundamentals]] · [[04.3 - PEFT - LoRA QLoRA Adapters]] · [[05.1 - What RAG Solves and When Not to Use It]]
+
 ---
 
 ## Section E: Limits and failure modes
@@ -344,6 +359,8 @@ So "just put everything in the context" works for small corpora and prototypes. 
 - *How does attention cost grow with length?* Standard attention compute is O(n²) in sequence length. **FlashAttention** reorganises the computation to be memory-efficient and much faster, but it is still exact attention, so compute remains quadratic.
 
 **What a strong answer shows:** You don't accept marketing numbers, and you reason about quality, cost and latency together.
+
+**Go deeper:** [[03.12 - Memory and Context Management]]
 
 ---
 
@@ -370,6 +387,8 @@ So "just put everything in the context" works for small corpora and prototypes. 
 
 **What a strong answer shows:** You treat hallucination as an engineering problem with layered defences and measurement, not a mystery.
 
+**Go deeper:** [[03.9 - Hallucinations and Grounding]]
+
 ---
 
 ## Section F: Prompting and structured output
@@ -391,6 +410,8 @@ So "just put everything in the context" works for small corpora and prototypes. 
 - *How do you make prompts robust to model upgrades?* Eval suites, avoiding reliance on quirks, and pinning model versions with a planned upgrade-and-evaluate process.
 
 **What a strong answer shows:** A practical, test-driven approach rather than "magic phrases".
+
+**Go deeper:** [[03.7 - Prompting and In-Context Learning]] · [[03.10 - Chain of Thought and Reasoning]]
 
 ---
 
@@ -415,6 +436,8 @@ So "just put everything in the context" works for small corpora and prototypes. 
 
 **What a strong answer shows:** You know the model only *proposes* calls, and you design validation and error loops around that.
 
+**Go deeper:** [[03.11 - Structured Outputs and Tool Calling]] · [[14.2 - Function Calling and Structured Outputs]]
+
 ---
 
 ## Section G: Choosing and running models
@@ -437,6 +460,8 @@ Common pattern, **model routing**: a cheap, fast model handles simple or classif
 - *How do you handle a model being deprecated?* Abstract the provider behind an interface, keep evals ready, pin versions, and test the replacement before switching.
 
 **What a strong answer shows:** You make the choice with evals and constraints, and you think about operations, not just "which model is smartest".
+
+**Go deeper:** [[10.4 - Model Routing and Multi-Model Architecture]] · [[10.1 - Latency and Cost Optimization]]
 
 ---
 
@@ -462,6 +487,8 @@ Principles:
 
 **What a strong answer shows:** You bring normal backend engineering discipline to AI features. Interviewers for "AI + backend" roles are often checking exactly this.
 
+**Go deeper:** [[01.4 - Where Backend Meets AI]] · [[01.3 - Production AI Systems Overview]]
+
 ---
 
 ### Q20. What are the biggest misconceptions you see about LLMs on engineering teams?
@@ -482,3 +509,7 @@ Principles:
 ## Further reading
 - [The Illustrated Transformer (Jay Alammar)](https://jalammar.github.io/illustrated-transformer/): the clearest visual walk-through of attention.
 - [Andrej Karpathy: "Let's build GPT" (video)](https://www.youtube.com/watch?v=kCc8FmEb1nY): code a small GPT from scratch in about two hours.
+
+---
+
+**Next:** [[02 - Retrieval-Augmented Generation (RAG)]]

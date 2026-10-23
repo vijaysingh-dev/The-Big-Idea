@@ -1,3 +1,13 @@
+**Up:** [[00 - Index (Interview)]] | **Prev:** [[01 - LLM Fundamentals]]
+
+---
+
+# 02 — Retrieval-Augmented Generation (RAG)
+
+> Every stage of a RAG pipeline: ingestion, chunking, embeddings, vector indexes, hybrid search, reranking, and evaluation with LLM-as-a-judge.
+
+---
+
 ## Section A: The big picture
 ### Q1. What is RAG, and why use it?
 
@@ -16,6 +26,8 @@ Why:
 - *When is RAG the wrong choice?* When the problem is behaviour or format (prompting or fine-tuning fixes those), when the whole corpus fits comfortably in context and rarely changes, or when the answer needs computation over structured data (use SQL or tools instead).
 
 **What a strong answer shows:** You frame RAG around a business need (freshness, access, citations), not just "it reduces hallucinations".
+
+**Go deeper:** [[05.1 - What RAG Solves and When Not to Use It]]
 
 ---
 
@@ -47,6 +59,8 @@ There are two pipelines: **offline indexing** and **online querying**.
 
 **What a strong answer shows:** You know both pipelines, you name the less glamorous stages (parsing, metadata, evaluation), and you know where quality is won or lost.
 
+**Go deeper:** [[03 - The Baseline RAG Pipeline]] · [[07 - Production RAG]]
+
 ---
 
 ## Section B: Ingestion and chunking
@@ -67,6 +81,8 @@ Approaches:
 - **Inspect the output.** Look at 20 parsed documents by eye before building anything else. Bad parsing silently caps quality.
 
 **What a strong answer shows:** Experience. People who've shipped RAG always mention parsing pain.
+
+**Go deeper:** [[05.2 - Ingestion and Connector Pipelines]]
 
 ---
 
@@ -100,6 +116,8 @@ Approaches:
 
 **What a strong answer shows:** You choose by the content type and by measurement, and you know the contextual tricks.
 
+**Go deeper:** [[04 - Chunking Strategies]] · [[05.3 - Chunking Strategies]]
+
 ---
 
 ## Section C: Embeddings and similarity
@@ -129,6 +147,8 @@ Approaches:
 
 **What a strong answer shows:** You understand the bi-encoder design and choose a model by testing, dimensions and operational cost.
 
+**Go deeper:** [[12.1 - Embedding Model Selection and Engineering Tradeoffs]] · [[03.2 - Embeddings and Vector Representations]]
+
 ---
 
 ### Q6. What is semantic search, and how is it different from keyword search?
@@ -140,6 +160,8 @@ Approaches:
 They fail in different ways, which is why **hybrid search** (Q12) is the production default.
 
 **What a strong answer shows:** You know the failure modes of each, not just the benefits of the newer one.
+
+**Go deeper:** [[03.4 - Semantic vs Dense vs Sparse Retrieval]]
 
 ---
 
@@ -165,6 +187,8 @@ All three give the **same ranking**. So most systems normalise once at indexing 
 
 **What a strong answer shows:** You can write the formulas, you know the normalisation equivalence, and you're careful about treating scores as absolute.
 
+**Go deeper:** [[03.3 - Similarity Search]]
+
 ---
 
 ## Section D: Vector indexes
@@ -184,6 +208,8 @@ All three give the **same ranking**. So most systems normalise once at indexing 
 - Beyond that, use HNSW (Q9) or IVF-based indexes (Q10).
 
 **What a strong answer shows:** You understand the recall/latency trade, and that exact search is a legitimate choice at small scale.
+
+**Go deeper:** [[06.1 - Vector DB Internals - ANN HNSW IVF PQ]]
 
 ---
 
@@ -228,6 +254,8 @@ All three give the **same ranking**. So most systems normalise once at indexing 
 
 **What a strong answer shows:** You can explain the layered greedy search, name the three parameters and their tradeoffs, and know how to tune them empirically.
 
+**Go deeper:** [[06.1 - Vector DB Internals - ANN HNSW IVF PQ]] · [[02 - Embeddings and Vector Search]]
+
 ---
 
 ### Q10. What are IVF and Product Quantization? How do they compare with HNSW?
@@ -251,6 +279,8 @@ All three give the **same ranking**. So most systems normalise once at indexing 
 - **DiskANN-style indexes** when you want graph-like quality from SSD.
 
 **What a strong answer shows:** You know there are options beyond HNSW and can pick based on scale, memory and recall needs.
+
+**Go deeper:** [[06.1 - Vector DB Internals - ANN HNSW IVF PQ]]
 
 ---
 
@@ -282,6 +312,8 @@ It needs no training, it's fast (an **inverted index** maps each term to the doc
 
 **What a strong answer shows:** You can explain IDF, saturation and length normalisation intuitively, and roughly write the formula.
 
+**Go deeper:** [[03.5 - BM25 and Hybrid Search]]
+
 ---
 
 ### Q12. What is hybrid search? How do you combine keyword and vector results?
@@ -304,6 +336,8 @@ Options:
 - Weight lexical search more for identifier-heavy domains (logs, code, part numbers), and semantic search more for natural-language questions.
 
 **What a strong answer shows:** You know *why* scores can't be added directly, and you can explain RRF.
+
+**Go deeper:** [[05.5 - Hybrid Retrieval and Reranking]] · [[05 - Retrieval Quality]]
 
 ---
 
@@ -331,6 +365,8 @@ Options:
 
 **What a strong answer shows:** A clear explanation of the precision/compute trade and of why two stages exist.
 
+**Go deeper:** [[03.6 - Rerankers - Cross vs Bi Encoders]]
+
 ---
 
 ## Section F: Query side
@@ -350,6 +386,8 @@ Each of these adds latency and cost, so turn them on based on evals, often only 
 
 **What a strong answer shows:** You know the toolbox, and you apply it selectively.
 
+**Go deeper:** [[05.4 - Query Transformation]]
+
 ---
 
 ### Q15. How do you handle metadata filtering and access control in vector search?
@@ -367,6 +405,8 @@ Metadata filters (tenant, user permissions, date, document type) are essential i
 - Keep permissions in sync when they change upstream (permission sync is a classic production bug).
 
 **What a strong answer shows:** You treat authorisation as a retrieval-layer filter, and you know how filters interact with ANN.
+
+**Go deeper:** [[06.2 - Metadata Filtering and Hybrid Search]] · [[05.6 - Citation and Access Control]] · [[09.2 - Enterprise Search and Permission-Aware Retrieval]]
 
 ---
 
@@ -390,6 +430,8 @@ Decision factors: scale, the team's existing stack, hybrid search needs, filteri
 
 **What a strong answer shows:** A pragmatic choice ("use what you have until it hurts") with clear reasons to upgrade.
 
+**Go deeper:** [[06.3 - Vector DB Comparison]]
+
 ---
 
 ## Section G: Generation side
@@ -408,6 +450,8 @@ Decision factors: scale, the team's existing stack, hybrid search needs, filteri
 - **Retrieved text is untrusted.** It may contain injected instructions, so tell the model that context is data, not instructions (Part 3).
 
 **What a strong answer shows:** Careful prompt construction, plus verification in code rather than trusting the model.
+
+**Go deeper:** [[05.6 - Citation and Access Control]]
 
 ---
 
@@ -428,6 +472,8 @@ Long context does change RAG:
 The modern pattern: retrieve generously, then let long context handle the retrieved material.
 
 **What a strong answer shows:** A balanced view grounded in cost, quality and scale, not hype in either direction.
+
+**Go deeper:** [[05.1 - What RAG Solves and When Not to Use It]] · [[03.12 - Memory and Context Management]]
 
 ---
 
@@ -465,9 +511,162 @@ Evaluate **retrieval** and **generation** separately, so you know where a failur
 
 **What a strong answer shows:** You separate retrieval from generation, know the metrics, and run evals as a regression process.
 
+**Go deeper:** [[06 - Evaluation]] · [[05.8 - RAG Evaluation Frameworks]] · [[13.3 - Evaluation Deep Dive]]
+
 ---
 
-### Q20. A user says, "the bot gave a wrong answer." How do you debug it?
+### Q20. What is LLM-as-a-judge? Implement one from scratch, then show the same evaluation with RAGAS.
+
+**Answer**
+
+**What it is:** using a (usually strong) LLM to grade another model's output against a rubric, because the quality you care about (correct? grounded? relevant?) can't be checked with string matching, and human grading doesn't scale.
+
+**Three kinds of judge:**
+
+| Type | Inputs | Use for |
+|---|---|---|
+| **Reference-based pointwise** | question + reference answer + candidate | Offline regression gates against a golden set. The most reliable |
+| **Reference-free pointwise** | question + retrieved context + candidate | Online monitoring of live traffic, where there's no reference: faithfulness, relevance |
+| **Pairwise** | question + answer A + answer B | "Is v2 better than v1?" More sensitive than comparing two averages |
+
+**Rules that make a judge trustworthy:**
+1. **Binary or 3-point scale with written definitions** for each label. 1–10 scales cluster at 7–8 and mean nothing.
+2. **Reasoning before the verdict**, in the output schema. It's more accurate and gives you something to debug.
+3. **Temperature 0**, a fixed and **versioned** prompt. Changing the judge prompt invalidates historical scores.
+4. **A different model family from the generator**, to avoid self-preference.
+5. **Swap positions in pairwise** and only count agreements, to cancel position bias.
+6. **Calibrate against humans:** label 50+ examples yourself and report agreement and **Cohen's kappa**. "Our judge agrees with human labels 88% of the time (κ = 0.74)" is what makes the numbers believable.
+7. **Decompose before judging** for faithfulness: split the answer into atomic claims and verify each one. "Is this paragraph faithful?" gets mush.
+
+**Code: a raw judge (any chat model behind `allm`)**
+
+```python
+import asyncio
+import json
+from typing import Literal
+
+from pydantic import BaseModel, ValidationError
+
+JUDGE_VERSION = "correctness-v3"     # store with every score; bump on any prompt change
+
+RUBRIC = """You are grading a candidate answer against a reference answer. Be strict.
+
+- CORRECT: every factual claim agrees with the reference; nothing important is missing.
+- PARTIALLY_CORRECT: the main point is right, but a detail is wrong or something important is missing.
+- INCORRECT: the main point is wrong or contradicts the reference, or the question isn't answered.
+Ignore style and length. Longer is NOT better unless it is more correct.
+
+Question: {question}
+Reference answer: {reference}
+Candidate answer: {candidate}
+
+Respond with JSON only: {{"reasoning": "<1-2 sentences>", "verdict": "CORRECT" | "PARTIALLY_CORRECT" | "INCORRECT"}}"""
+
+
+class Verdict(BaseModel):
+    reasoning: str                                   # comes first: reason, then decide
+    verdict: Literal["CORRECT", "PARTIALLY_CORRECT", "INCORRECT"]
+
+SCORE = {"CORRECT": 1.0, "PARTIALLY_CORRECT": 0.5, "INCORRECT": 0.0}
+
+
+def parse_json(text: str) -> dict:
+    start, end = text.find("{"), text.rfind("}")     # tolerate ```json fences or a preamble
+    return json.loads(text[start : end + 1])
+
+
+async def judge(question: str, reference: str, candidate: str, retries: int = 2) -> Verdict:
+    prompt = RUBRIC.format(question=question, reference=reference, candidate=candidate)
+    for attempt in range(retries + 1):
+        try:
+            return Verdict.model_validate(parse_json(await allm(prompt, temperature=0)))
+        except (ValueError, ValidationError):
+            if attempt == retries:
+                raise
+
+
+async def evaluate(golden, answers, concurrency=8) -> float:
+    sem = asyncio.Semaphore(concurrency)             # respect the judge's rate limit
+    async def one(ex, ans):
+        async with sem:
+            return SCORE[(await judge(ex.question, ex.ground_truth, ans)).verdict]
+    scores = await asyncio.gather(*(one(e, a) for e, a in zip(golden, answers)))
+    return sum(scores) / len(scores)
+```
+
+**Faithfulness from scratch (reference-free, claim-level):**
+
+```python
+CLAIMS = "Break the answer into atomic factual claims, one per line, no numbering.\nAnswer: {answer}"
+VERIFY = ("Context:\n{context}\n\nClaim: {claim}\n\n"
+          "Is the claim fully supported by the context? Reply with one word: SUPPORTED or UNSUPPORTED.")
+
+async def faithfulness(answer: str, context: str) -> float:
+    claims = [c.strip() for c in (await allm(CLAIMS.format(answer=answer))).splitlines() if c.strip()]
+    if not claims:
+        return 1.0
+    verdicts = await asyncio.gather(*(allm(VERIFY.format(context=context, claim=c), temperature=0)
+                                      for c in claims))
+    return sum(v.strip().upper().startswith("SUPPORTED") for v in verdicts) / len(claims)
+```
+
+**Calibration:**
+
+```python
+from sklearn.metrics import cohen_kappa_score
+human = [...]                                       # your labels for 50+ examples
+model = [(await judge(e.question, e.ground_truth, a)).verdict for e, a in zip(sample, answers)]
+print(f"agreement={sum(h == m for h, m in zip(human, model)) / len(human):.0%}",
+      f"kappa={cohen_kappa_score(human, model):.2f}")   # > 0.6 = substantial agreement
+```
+
+**Code: the same evaluation with RAGAS (0.2+ API)**
+
+```python
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from ragas import EvaluationDataset, evaluate
+from ragas.embeddings import LangchainEmbeddingsWrapper
+from ragas.llms import LangchainLLMWrapper
+from ragas.metrics import (Faithfulness, FactualCorrectness, LLMContextPrecisionWithReference,
+                           LLMContextRecall, ResponseRelevancy)
+
+rows = []
+for ex in golden:
+    out = run_rag(ex.question)                       # run the pipeline ONCE per question
+    rows.append({"user_input": ex.question,
+                 "response": out["answer"],
+                 "retrieved_contexts": [c.text for c in out["chunks"]],
+                 "reference": ex.ground_truth})
+
+result = evaluate(
+    dataset=EvaluationDataset.from_list(rows),
+    metrics=[Faithfulness(), ResponseRelevancy(), LLMContextPrecisionWithReference(),
+             LLMContextRecall(), FactualCorrectness()],
+    llm=LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini", temperature=0)),
+    embeddings=LangchainEmbeddingsWrapper(OpenAIEmbeddings(model="text-embedding-3-small")),
+)
+df = result.to_pandas()          # per-question scores: read the 10 worst before trusting the averages
+```
+
+**What each RAGAS metric grades:** `LLMContextPrecisionWithReference` and `LLMContextRecall` grade the **retriever**. `Faithfulness` grades the **generator** (grounded in context?). `ResponseRelevancy` checks the answer addresses the question. `FactualCorrectness` grades the **system** against the reference. When end-to-end correctness drops, the first four tell you which half broke.
+
+**Raw vs RAGAS:** RAGAS gives standard, comparable metrics fast. A custom judge gives **your** rubric (domain rules, refusal policy, tone), and you understand every line. In production you usually have both: RAGAS for the RAG triad, and a custom judge for product-specific quality.
+
+**Likely follow-ups**
+- *Known biases of LLM judges?* Position bias (fix: swap and average), verbosity bias (instruct against it, control for length), self-preference (use a different model family), score clustering (binary or 3-point scale), and sycophancy toward the question's framing (neutral wording).
+- *Isn't it circular to use an LLM to grade an LLM?* Only if it's uncalibrated. The judge's task (verify one claim against given text) is much easier than the generator's, and the calibration against human labels is what grounds it.
+- *How do you use it in CI?* Retrieval metrics on every PR (cheap, deterministic). The judge suite nightly or per release on a fixed golden set, gated by thresholds, with confidence intervals, because 2 points on 40 examples is noise.
+- *Cost?* Judges multiply token spend (faithfulness = 1 + N claim calls). Use a smaller model for claim verification, sample in production (e.g. 5% of traffic), and cache by (prompt version, input hash).
+
+**What a strong answer shows:** You can build a judge (rubric, structured output, reasoning first, versioning), you know its biases and how to calibrate it, and you know what RAGAS's metrics measure rather than just how to call them.
+
+**Go deeper:** [[06 - Evaluation#4. LLM-as-judge — how to do it without fooling yourself]] (the full judge with pairwise mode and the confusion matrix) · [[06 - Evaluation#Using RAGAS]] · [[05.8 - RAG Evaluation Frameworks]] · [[13.3 - Evaluation Deep Dive]] · [[10.5 - Evaluation Pipelines and Monitoring]]
+
+**Resource:** [Hamel Husain — "Using LLM-as-a-Judge for evaluation"](https://hamel.dev/blog/posts/llm-judge/), a practitioner's guide to building judges that domain experts trust. Also [RAGAS docs — Metrics](https://docs.ragas.io/en/stable/concepts/metrics/) and the [Zheng et al. "Judging LLM-as-a-Judge" paper (MT-Bench)](https://arxiv.org/abs/2306.05685), the paper that measured position, verbosity and self-enhancement bias.
+
+---
+
+### Q21. A user says, "the bot gave a wrong answer." How do you debug it?
 
 **Answer**
 Trace it stage by stage, using the request's trace:
@@ -484,9 +683,11 @@ Then **add the case to the eval set**, so the fix is protected from future regre
 
 **What a strong answer shows:** A systematic, evidence-based debugging method, which only works if you built tracing in from the start.
 
+**Go deeper:** [[06 - Evaluation]] · [[07 - Production RAG]]
+
 ---
 
-### Q21. How do you keep the index fresh and consistent?
+### Q22. How do you keep the index fresh and consistent?
 
 **Answer**
 - **Incremental ingestion:** detect changes using source timestamps, change events (e.g. S3 events, webhooks), or comparing **content hashes**. Re-embed only what changed.
@@ -497,11 +698,13 @@ Then **add the case to the eval set**, so the fix is protected from future regre
 
 **What a strong answer shows:** You treat the index as a data pipeline with correctness guarantees, not a one-time script.
 
+**Go deeper:** [[05.7 - Indexing - Incremental Freshness Deduplication]]
+
 ---
 
 ## Section I: Advanced patterns
 
-### Q22. What are Agentic RAG, Corrective RAG, Self-RAG and GraphRAG?
+### Q23. What are Agentic RAG, Corrective RAG, Self-RAG and GraphRAG?
 
 **Answer**
 - **Agentic RAG:** retrieval becomes a *tool* the agent chooses to call, possibly several times, with different queries or sources (vector store, SQL, web). Good for complex, multi-hop questions. Costs more latency and more variance.
@@ -519,9 +722,11 @@ Then **add the case to the eval set**, so the fix is protected from future regre
 
 **What a strong answer shows:** Awareness of the patterns *and* the judgement to use the simplest one that meets the need.
 
+**Go deeper:** [[09.1 - Knowledge Graphs and GraphRAG]] · [[12.4 - GraphRAG in Practice]] · [[09 - Agent Patterns and LangGraph]]
+
 ---
 
-### Q23. Design question: build a RAG system for 10M internal documents across 5,000 employees with varied permissions.
+### Q24. Design question: build a RAG system for 10M internal documents across 5,000 employees with varied permissions.
 
 **Answer outline** (state assumptions, then go layer by layer)
 - **Requirements:** p95 latency under ~3 s to first token, permission-correct results, freshness within 1 hour, citations, and evaluation.
@@ -541,8 +746,14 @@ Then **add the case to the eval set**, so the fix is protected from future regre
 
 **What a strong answer shows:** You structure the problem (requirements → data flow → scale → quality → operations), and you put security and evaluation in from the start, not as afterthoughts.
 
+**Go deeper:** [[11.4 - Multi-Tenant RAG Platform]] · [[09.2 - Enterprise Search and Permission-Aware Retrieval]]
+
 ---
 
 ## Further reading
 - [Anthropic: Contextual Retrieval](https://www.anthropic.com/news/contextual-retrieval): chunking, BM25, hybrid search and reranking, with measured gains.
 - [Pinecone: HNSW explained](https://www.pinecone.io/learn/series/faiss/hnsw/): a visual walk-through of the algorithm and its parameters.
+
+---
+
+**Next:** [[03 - Agentic AI and Production LLMOps]]

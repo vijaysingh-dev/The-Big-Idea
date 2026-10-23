@@ -196,25 +196,74 @@ Decomposing into atomic claims before judging is the important detail: asking "i
 
 ### Using RAGAS
 
+RAGAS 0.2 changed the API. Old tutorials (and older versions of this note) use `Dataset.from_dict({"question", "answer", "contexts", "ground_truth"})` with lowercase metric functions. The current shape uses `EvaluationDataset`, **metric classes**, and explicit judge LLM and embedding wrappers:
+
 ```python
-from datasets import Dataset
-from ragas import evaluate
-from ragas.metrics import (answer_correctness, answer_relevancy,
-                           context_precision, context_recall, faithfulness)
+# pip install "ragas>=0.2" langchain-openai     (any LangChain chat model works as the judge)
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from ragas import EvaluationDataset, evaluate
+from ragas.embeddings import LangchainEmbeddingsWrapper
+from ragas.llms import LangchainLLMWrapper
+from ragas.metrics import (
+    Faithfulness,                       # answer claims supported by retrieved context
+    ResponseRelevancy,                  # answer addresses the question (uses embeddings)
+    LLMContextPrecisionWithReference,   # relevant chunks ranked high
+    LLMContextRecall,                   # context covers everything in the reference
+    FactualCorrectness,                 # answer vs reference, claim-level
+)
 
-data = Dataset.from_dict({
-    "question":     [ex.question for ex in golden],
-    "answer":       [run_rag(ex.question)["answer"] for ex in golden],
-    "contexts":     [[c.context_text for c in run_rag(ex.question)["chunks"]] for ex in golden],
-    "ground_truth": [ex.ground_truth for ex in golden],
-})
+# 1. Run your pipeline ONCE per question and keep both outputs
+rows = []
+for ex in golden:
+    out = run_rag(ex.question)
+    rows.append({
+        "user_input":         ex.question,
+        "response":           out["answer"],
+        "retrieved_contexts": [c.context_text for c in out["chunks"]],
+        "reference":          ex.ground_truth,
+    })
+dataset = EvaluationDataset.from_list(rows)
 
-result = evaluate(data, metrics=[faithfulness, answer_relevancy,
-                                 context_precision, context_recall, answer_correctness])
-print(result)
+# 2. Judge model: different family from the generator if you can (self-preference bias)
+judge = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini", temperature=0))
+embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings(model="text-embedding-3-small"))
+
+# 3. Evaluate
+result = evaluate(
+    dataset=dataset,
+    metrics=[Faithfulness(), ResponseRelevancy(), LLMContextPrecisionWithReference(),
+             LLMContextRecall(), FactualCorrectness()],
+    llm=judge,
+    embeddings=embeddings,
+)
+print(result)                         # aggregate scores
+df = result.to_pandas()               # per-question scores: sort ascending, read the worst 10
 ```
 
-RAGAS is the standard toolkit and is fine to use — but implement faithfulness by hand at least once so you can explain what it's doing rather than citing a library.
+Scoring a **single sample**, which is useful inside a test or an online monitor:
+
+```python
+from ragas import SingleTurnSample
+
+sample = SingleTurnSample(
+    user_input="When was the refund policy last updated?",
+    response="It was updated in March 2024 and allows 30-day returns.",
+    retrieved_contexts=["Refund policy (rev. March 2024): returns accepted within 30 days."],
+)
+score = await Faithfulness(llm=judge).single_turn_ascore(sample)   # → 1.0
+```
+
+| Old name (≤0.1) | Current class | Old column → new field |
+|---|---|---|
+| `faithfulness` | `Faithfulness` | `question` → `user_input` |
+| `answer_relevancy` | `ResponseRelevancy` | `answer` → `response` |
+| `context_precision` | `LLMContextPrecisionWithReference` | `contexts` → `retrieved_contexts` |
+| `context_recall` | `LLMContextRecall` | `ground_truth` → `reference` |
+| `answer_correctness` | `FactualCorrectness` (closest equivalent) | |
+
+> ⚠️ **RAGAS moves fast.** Pin the version in `requirements.txt`, and treat a RAGAS upgrade like a judge-prompt change: scores before and after aren't comparable. Check [docs.ragas.io](https://docs.ragas.io/) for the version you pin.
+
+RAGAS is the standard toolkit and is fine to use. But implement faithfulness by hand at least once, so you can explain what it's doing rather than citing a library. Section 4 builds a general-purpose judge from scratch too.
 
 ---
 
@@ -250,6 +299,137 @@ VERDICT: CORRECT
 VERDICT: PARTIALLY_CORRECT
 VERDICT: INCORRECT"""
 ```
+
+### A raw LLM judge, end to end
+
+The prompt above is the core. A judge you can actually run in CI also needs **structured output**, **parse-failure handling**, **concurrency limits**, a **pairwise mode** that cancels position bias, and **calibration** against human labels. All of it fits in one file, and it works with any chat model behind `allm()`, an async version of the `llm()` helper used above.
+
+```python
+# raglab/eval/judge.py
+import asyncio
+import json
+from dataclasses import dataclass
+from typing import Literal
+
+from pydantic import BaseModel, ValidationError
+
+JUDGE_VERSION = "correctness-v3"      # bump on ANY prompt change; store with every score
+
+RUBRIC = """You are grading a candidate answer against a reference answer. Be strict.
+
+Definitions:
+- CORRECT: every factual claim in the candidate agrees with the reference; nothing important is missing.
+- PARTIALLY_CORRECT: the main point is right, but a detail is wrong or an important part is missing.
+- INCORRECT: the main point is wrong, contradicts the reference, or the candidate fails to answer.
+Ignore style, length and tone. A longer answer is NOT better unless it is more correct.
+If the reference says the answer is unknown and the candidate refuses, that is CORRECT.
+
+Question: {question}
+Reference answer: {reference}
+Candidate answer: {candidate}
+
+Respond with JSON only:
+{{"reasoning": "<one or two sentences>", "verdict": "CORRECT" | "PARTIALLY_CORRECT" | "INCORRECT"}}"""
+
+
+class Verdict(BaseModel):
+    reasoning: str                                    # reasoning BEFORE verdict, in the schema order
+    verdict: Literal["CORRECT", "PARTIALLY_CORRECT", "INCORRECT"]
+
+
+SCORE = {"CORRECT": 1.0, "PARTIALLY_CORRECT": 0.5, "INCORRECT": 0.0}
+
+
+def parse_json(text: str) -> dict:
+    """Models sometimes wrap JSON in ``` fences or add a preamble. Strip it."""
+    start, end = text.find("{"), text.rfind("}")
+    if start == -1 or end == -1:
+        raise ValueError(f"no JSON object in judge output: {text[:200]!r}")
+    return json.loads(text[start : end + 1])
+
+
+async def judge_one(question: str, reference: str, candidate: str, retries: int = 2) -> Verdict:
+    prompt = RUBRIC.format(question=question, reference=reference, candidate=candidate)
+    last_err = None
+    for _ in range(retries + 1):
+        raw = await allm(prompt, temperature=0)      # your async chat call; temperature 0
+        try:
+            return Verdict.model_validate(parse_json(raw))
+        except (ValueError, ValidationError) as e:   # malformed → retry, don't crash the run
+            last_err = e
+    raise RuntimeError(f"judge failed to produce valid output: {last_err}")
+
+
+@dataclass
+class JudgedExample:
+    question: str
+    verdict: str
+    score: float
+    reasoning: str
+
+
+async def judge_dataset(examples, answers: list[str], concurrency: int = 8) -> list[JudgedExample]:
+    sem = asyncio.Semaphore(concurrency)              # stay under the judge model's rate limit
+
+    async def run(ex, ans):
+        async with sem:
+            v = await judge_one(ex.question, ex.ground_truth, ans)
+            return JudgedExample(ex.question, v.verdict, SCORE[v.verdict], v.reasoning)
+
+    return await asyncio.gather(*(run(ex, a) for ex, a in zip(examples, answers)))
+```
+
+**Pairwise judging** compares two systems directly ("is the new prompt better than the old?"). It's more sensitive than comparing two pointwise averages. The catch is **position bias**, so run every pair **in both orders** and only count a win when both orders agree:
+
+```python
+PAIRWISE = """Question: {question}
+Reference answer: {reference}
+
+Answer A: {a}
+Answer B: {b}
+
+Which answer is more correct and complete with respect to the reference? Ignore length and style.
+Respond with JSON only: {{"reasoning": "<one sentence>", "winner": "A" | "B" | "TIE"}}"""
+
+
+class Pairwise(BaseModel):
+    reasoning: str
+    winner: Literal["A", "B", "TIE"]
+
+
+async def compare(question, reference, old: str, new: str) -> str:
+    """Returns 'new', 'old' or 'tie'. Swaps positions to cancel position bias."""
+    first = Pairwise.model_validate(parse_json(await allm(
+        PAIRWISE.format(question=question, reference=reference, a=old, b=new), temperature=0)))
+    second = Pairwise.model_validate(parse_json(await allm(
+        PAIRWISE.format(question=question, reference=reference, a=new, b=old), temperature=0)))
+
+    vote_1 = {"A": "old", "B": "new", "TIE": "tie"}[first.winner]
+    vote_2 = {"A": "new", "B": "old", "TIE": "tie"}[second.winner]
+    return vote_1 if vote_1 == vote_2 else "tie"      # disagreement across orders = no real preference
+```
+
+**Calibration** is the step that makes the judge's numbers believable. Hand-label 50 or more examples, then measure agreement. Report **Cohen's kappa**, not just raw agreement, because raw agreement looks high when most answers are correct:
+
+```python
+from sklearn.metrics import cohen_kappa_score, confusion_matrix
+
+human = ["CORRECT", "INCORRECT", "PARTIALLY_CORRECT", ...]   # your labels, same order
+model = [j.verdict for j in judged]
+
+agreement = sum(h == m for h, m in zip(human, model)) / len(human)
+kappa = cohen_kappa_score(human, model)
+print(f"agreement={agreement:.0%}  kappa={kappa:.2f}")       # kappa > 0.6 is substantial agreement
+print(confusion_matrix(human, model, labels=list(SCORE)))   # WHERE does it disagree with you?
+```
+
+If kappa is low, read the disagreements, tighten the rubric definitions, bump `JUDGE_VERSION`, and re-run. The **confusion matrix** tells you what to fix. A judge that marks your PARTIALLY_CORRECT as CORRECT needs a stricter definition of "complete".
+
+| Judge type | Needs | Use for |
+|---|---|---|
+| **Reference-based pointwise** (above) | Golden answers | Offline regression gate, the most reliable |
+| **Reference-free pointwise** (faithfulness, relevancy) | Retrieved context only | Online monitoring of live traffic, where there's no reference |
+| **Pairwise** | Two systems' outputs | A/B decisions: "is v2 better than v1?" |
 
 ---
 

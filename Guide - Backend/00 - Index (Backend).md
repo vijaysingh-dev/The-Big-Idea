@@ -67,6 +67,7 @@ You have not learned a topic until step 3 is done. See [[00.2 - The Codebase Fir
 | [[01.10 - Connection Pools and Limits]] | Pool sizing math for DB, HTTP clients and Redis |
 | [[01.11 - Backpressure Inside One Process]] | Bounded queues, semaphores, why unbounded means outage |
 | [[01.12 - Profiling and Debugging Async Services]] | py-spy, asyncio debug mode, finding the stalled loop |
+| [[01.13 - FastAPI Request Lifecycle End to End]] | Client → LB → uvicorn → middleware → DI → validation → serialization, and where latency hides |
 
 ### 02 — Networking Foundations
 
@@ -155,6 +156,7 @@ You have not learned a topic until step 3 is done. See [[00.2 - The Codebase Fir
 | [[06.15 - Search - Postgres vs Elasticsearch]] | Full text search, inverted indexes, when to move out |
 | [[06.16 - Multi Tenant Data Models]] | Row, schema, database isolation — cost and blast radius |
 | [[06.17 - Database Anti Patterns]] | The 15 mistakes that show up in every code review |
+| [[06.18 - Fixing a Slow Database at Scale]] | The playbook: sanity-check scale, find the 5 s, fix queries, pools, caching layers, sharding |
 
 ### 07 — Caching and Coordination
 

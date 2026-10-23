@@ -1,3 +1,13 @@
+**Up:** [[00 - Index (Interview)]] | **Prev:** [[03 - Agentic AI and Production LLMOps]]
+
+---
+
+# 04 — Python, Backend Engineering and AI System Design
+
+> Python internals and asyncio, the FastAPI request lifecycle, API and database design including pagination, resilience, testing, and AI system design.
+
+---
+
 ## Section A: Python internals
 
 ### Q1. What is the GIL? How does it affect threads, processes and asyncio?
@@ -19,6 +29,8 @@ Consequences:
 - *Does the GIL make my code thread-safe?* No. It protects the interpreter's internals, not your logic. `counter += 1` is several bytecode steps and can still race between threads. Use locks or thread-safe structures.
 
 **What a strong answer shows:** You choose a concurrency model based on whether the work is I/O-bound or CPU-bound, and you know the GIL doesn't give you thread safety.
+
+**Go deeper:** [[01.2 - The GIL]] · [[01.8 - Offloading Work]]
 
 ---
 
@@ -50,9 +62,118 @@ Common tools:
 
 **What a strong answer shows:** You understand cooperative scheduling, and you can name the blocking-call pitfall immediately.
 
+**Go deeper:** [[01.3 - Threads Processes and Coroutines]] · [[01.6 - The Blocking Call Problem]] · [[01.7 - Cancellation and Structured Concurrency]] · [[01.11 - Backpressure Inside One Process]]
+
 ---
 
-### Q3. Explain generators and why they matter for backend and AI work.
+### Q3. What exactly are a coroutine, a Task, a Future and the event loop? What happens under the hood when you `await`?
+
+**Answer**
+
+Four pieces, each with one job:
+
+| Piece | What it is | Job |
+|---|---|---|
+| **Coroutine function** | `async def fetch(): ...` | A factory. Calling it **runs nothing**. It returns a coroutine object |
+| **Coroutine object** | `fetch()` | A **paused, resumable function frame**: local variables plus the position where it stopped. Built on the same machinery as generators |
+| **Future** | `asyncio.Future` | A **placeholder for a result that doesn't exist yet**, plus a list of callbacks to run when it's set |
+| **Task** | `asyncio.create_task(coro)` | A Future that **drives a coroutine**: it steps the coroutine forward until it pauses, and wakes it again when the thing it's waiting for is done |
+| **Event loop** | `asyncio.get_running_loop()` | A single-threaded **scheduler**: a queue of ready callbacks, a heap of timers, and an OS **selector** (epoll/kqueue) watching sockets |
+
+**What one `await` really does:**
+
+```
+1. Your coroutine hits:  data = await reader.read(1024)
+2. No data yet, so the read creates a Future and the await chain YIELDS that Future
+   up through every awaiting coroutine to the Task at the top.
+3. The Task sees "waiting on Future F" → calls F.add_done_callback(task.__step) and returns.
+   Your coroutine is now frozen, mid-function, holding no thread.
+4. The loop registers the socket with epoll and goes on running OTHER ready tasks.
+5. Bytes arrive → epoll says the socket is readable → the loop sets F's result.
+6. F runs its callbacks → task.__step is scheduled on the ready queue.
+7. Next loop iteration: the Task calls coro.send(result) → your coroutine resumes on the
+   line after the await, with `data` filled in.
+```
+
+**The event loop, in essence** (this is what `asyncio`'s `_run_once` does):
+
+```python
+while True:
+    timeout = time_until_next_timer() if not ready else 0
+    for fd, event in selector.select(timeout):     # sleep in the OS until I/O or a timer
+        ready.append(callback_for(fd, event))       # I/O is ready → its callback becomes runnable
+    ready.extend(pop_expired_timers())              # asyncio.sleep / call_later
+    for _ in range(len(ready)):
+        ready.popleft()()                           # run each callback: usually task.__step
+```
+
+**Coroutines are generators underneath.** You can drive one by hand:
+
+```python
+class Wait:                        # a minimal awaitable: yields itself to whoever drives us
+    def __await__(self):
+        value = yield self         # pause here; resume with whatever send() passes in
+        return value
+
+async def worker():
+    print("start")
+    x = await Wait()               # suspends: control goes back to the driver
+    print("got", x)
+    return x * 2
+
+coro = worker()                    # nothing printed yet: calling only creates the object
+coro.send(None)                    # prints "start", runs until the first await, returns the Wait
+try:
+    coro.send(21)                  # resumes: prints "got 21"
+except StopIteration as e:
+    print("result", e.value)       # result 42: the return value rides on StopIteration
+```
+
+A Task is essentially that `send` loop, written to cooperate with Futures and the selector.
+
+**`await` vs `create_task`: sequential vs concurrent**
+
+```python
+import asyncio, time
+
+async def call(name, secs):
+    await asyncio.sleep(secs)              # stands in for a network call
+    return name
+
+async def sequential():
+    a = await call("a", 1)                 # waits 1 s
+    b = await call("b", 1)                 # THEN waits 1 s → 2 s total
+    return a, b
+
+async def concurrent():
+    async with asyncio.TaskGroup() as tg:  # 3.11+: structured, cancels siblings on error
+        ta = tg.create_task(call("a", 1))  # both scheduled immediately
+        tb = tg.create_task(call("b", 1))
+    return ta.result(), tb.result()        # ~1 s total
+
+start = time.perf_counter(); asyncio.run(sequential()); print(f"{time.perf_counter()-start:.1f}s")  # 2.0s
+start = time.perf_counter(); asyncio.run(concurrent()); print(f"{time.perf_counter()-start:.1f}s")  # 1.0s
+```
+
+`await coro` runs the coroutine **inline**, as part of the current task. Only `create_task` (or `gather`, or a TaskGroup) creates **new concurrent work**.
+
+**Concurrency, not parallelism:** one loop runs on one thread, so only one coroutine executes Python code at any instant. Thousands can be *waiting* at once, which is why asyncio suits I/O-bound work (sockets, DB, LLM APIs) and not CPU-bound work.
+
+**Likely follow-ups**
+- *What if a coroutine never awaits anything that actually suspends?* It never yields, so it hogs the loop until it finishes. The same thing happens with a long CPU loop or a blocking call. Cooperative means *you* must yield.
+- *What's uvloop?* A drop-in event loop implemented on libuv (the library under Node.js). Same semantics, typically 2–4× faster loop overhead. `uvicorn[standard]` uses it.
+- *How is state passed per request without globals?* `contextvars`. Each Task gets a copy of the context when it's created, so a request ID set in middleware is visible in that request's coroutines only.
+- *Thread vs coroutine cost?* A thread: an OS-scheduled stack of around 8 MB virtual memory, with preemptive switching anywhere. A coroutine: a small heap-allocated frame (around 1–2 KB), switching only at `await`. That's why you can have 100k coroutines but not 100k threads.
+
+**What a strong answer shows:** You can explain suspension mechanically (the Future yielded up to the Task, the callback, `send`), you know `await` vs `create_task`, and you connect it to why blocking calls are fatal.
+
+**Go deeper:** [[01.4 - Building an Event Loop From Scratch]] (build exactly the loop above, in 150 lines) · [[01.5 - Coroutines Tasks and Futures]] · [[01.3 - Threads Processes and Coroutines]]
+
+**Resource:** [Python docs — Coroutines and Tasks](https://docs.python.org/3/library/asyncio-task.html), plus David Beazley's PyCon talk *"Python Concurrency From the Ground Up: LIVE!"*, which builds an event loop from sockets and generators while you watch.
+
+---
+
+### Q4. Explain generators and why they matter for backend and AI work.
 
 **Answer**
 A **generator** (a function with `yield`) produces values **lazily**, one at a time, keeping its state between them. It's an iterator, so it doesn't build the whole result in memory.
@@ -68,9 +189,11 @@ Related: `itertools` (`islice`, `chain`, and `batched` in 3.12+) and generator e
 
 **What a strong answer shows:** You connect laziness to real memory and streaming use cases.
 
+**Go deeper:** [[01.4 - Building an Event Loop From Scratch]] (generators are what coroutines are built on)
+
 ---
 
-### Q4. How do decorators and context managers work? Give production examples.
+### Q5. How do decorators and context managers work? Give production examples.
 
 **Answer**
 - **Decorator:** a function that takes a function and returns a new function that wraps it. `@retry` is just `f = retry(f)`. Use `functools.wraps` to keep the name and docstring.
@@ -82,9 +205,11 @@ Related: `itertools` (`islice`, `chain`, and `batched` in 3.12+) and generator e
 
 **What a strong answer shows:** Fluency with Python's tools for cross-cutting concerns.
 
+**Go deeper:** [[02.7 - Decorator]] · [[01.7 - Cancellation and Structured Concurrency]] (context managers and cleanup)
+
 ---
 
-### Q5. How does Python manage memory? What are the classic gotchas?
+### Q6. How does Python manage memory? What are the classic gotchas?
 
 **Answer**
 - **Reference counting:** each object counts the references to it, and is freed immediately when the count hits 0.
@@ -100,9 +225,11 @@ Gotchas:
 
 **What a strong answer shows:** Solid fundamentals, plus awareness of the issues that actually happen in long-running services.
 
+**Go deeper:** [[01.1 - How Python Actually Runs Your Code]]
+
 ---
 
-### Q6. Dataclasses vs. Pydantic vs. TypedDict. Protocol vs. ABC. When do you use each?
+### Q7. Dataclasses vs. Pydantic vs. TypedDict. Protocol vs. ABC. When do you use each?
 
 **Answer**
 - **`dataclass`:** lightweight containers for internal data, with no runtime validation. Fast and simple. Use `frozen=True` for immutability.
@@ -118,11 +245,13 @@ Gotchas:
 
 **What a strong answer shows:** Picking tools by where validation and coupling are needed.
 
+**Go deeper:** [[06 - Design Principles and Patterns#Q1. Explain the SOLID principles with real examples.]] (Protocol for ISP)
+
 ---
 
 ## Section B: FastAPI and APIs
 
-### Q7. How does FastAPI work under the hood? What's the difference between `def` and `async def` endpoints?
+### Q8. How does FastAPI work under the hood? What's the difference between `def` and `async def` endpoints?
 
 **Answer**
 - FastAPI is built on **Starlette**, an **ASGI** framework. ASGI (Asynchronous Server Gateway Interface) is the async successor to WSGI, the standard interface between Python web servers and apps.
@@ -139,9 +268,121 @@ Gotchas:
 
 **What a strong answer shows:** A precise understanding of the blocking-call trap: the most common FastAPI production bug.
 
+**Go deeper:** [[01.9 - ASGI and How Uvicorn Serves a Request]] · [[01.8 - Offloading Work]] · [[01.6 - The Blocking Call Problem]]
+
 ---
 
-### Q8. How does dependency injection work in FastAPI? What about app lifecycle?
+### Q9. Walk me through what happens to a request in a FastAPI service, from the client to the response.
+
+**Answer**
+
+Split it into three bands, and say that each hop has a **timeout**, a **queue** and a **failure mode**:
+
+```
+CLIENT → EDGE
+  DNS → TCP handshake → TLS handshake (keep-alive skips these on reused connections)
+  → CDN/WAF → load balancer / ingress: terminates TLS, picks a healthy pod,
+    adds X-Forwarded-For/Proto → (optional) nginx: body limits, buffering, timeouts
+
+SERVER (uvicorn)
+  kernel accept queue (--backlog) → uvicorn worker's event loop accepts
+  → parses HTTP (httptools/h11) → builds the ASGI scope dict
+  → starts a Task running app(scope, receive, send)
+
+FRAMEWORK (Starlette → FastAPI)
+  ServerErrorMiddleware (outermost, → 500)
+    → your middleware (last added = outermost)
+      → ExceptionMiddleware (HTTPException → response)
+        → Router: FULL match → handle · path-only match → 405 · none → 404
+          → FastAPI route handler:
+              1. read and parse the body           (malformed JSON → 422)
+              2. solve the Depends() graph         (cached per request; yield deps opened)
+              3. validate path/query/header/body with Pydantic (all errors → one 422)
+              4. call the endpoint: async def → awaited on the loop
+                                    def       → anyio threadpool (40 threads by default)
+              5. validate + filter the return value against response_model (mismatch → 500)
+              6. serialize to JSON → JSONResponse
+  → send(http.response.start) + send(http.response.body) → uvicorn writes bytes
+  → BackgroundTasks run (same worker, not durable) → yield-dependency teardown
+  → keep-alive: the connection waits for the next request
+```
+
+**Code: one endpoint that touches every FastAPI step**
+
+```python
+from contextlib import asynccontextmanager
+
+import asyncpg
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
+from pydantic import BaseModel
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):                     # startup: pools created ONCE per process
+    app.state.pool = await asyncpg.create_pool(DSN, max_size=20)
+    yield
+    await app.state.pool.close()
+
+app = FastAPI(lifespan=lifespan)
+
+
+async def get_conn(request: Request):                 # yield dependency: setup + teardown
+    async with request.app.state.pool.acquire() as conn:
+        yield conn
+
+
+async def current_user(request: Request, conn=Depends(get_conn)):   # nested dependency
+    user = await conn.fetchrow("SELECT id, name FROM users WHERE token = $1",
+                               request.headers.get("authorization", ""))
+    if not user:
+        raise HTTPException(401)                      # → ExceptionMiddleware → 401
+    return user
+
+
+class NoteIn(BaseModel):
+    text: str
+
+class NoteOut(BaseModel):                             # allow-list: only these fields leave
+    id: int
+    text: str
+
+
+@app.post("/notes", response_model=NoteOut, status_code=201)
+async def create_note(
+    body: NoteIn,                                     # step 1 + 3: parsed and validated
+    background: BackgroundTasks,
+    user=Depends(current_user),                       # step 2: get_conn resolved once, shared
+    conn=Depends(get_conn),
+):
+    row = await conn.fetchrow(                        # step 4: async I/O on the loop
+        "INSERT INTO notes (user_id, text) VALUES ($1, $2) RETURNING id, text, internal_flag",
+        user["id"], body.text)
+    background.add_task(audit_log, user["id"], row["id"])   # runs after the response is sent
+    return dict(row)                                  # step 5: internal_flag filtered out
+```
+
+**What bites in production (say two or three of these):**
+- A **blocking call in `async def`** stalls every request on the worker, including health checks.
+- **Threadpool saturation** with slow `def` endpoints: requests queue *before* your code runs, so your handler timers look fine.
+- **Pool exhaustion**: pool size × workers × pods is more than the DB allows.
+- **Keep-alive mismatch**: if the LB's idle timeout is longer than uvicorn's (5 s by default), you get random 502s. Set the app's keep-alive higher than the LB's.
+- **Proxy buffering** breaks SSE and streaming. **Timeouts that don't shrink inward** mean the proxy returns a 504 while the handler keeps running.
+- **Middleware order** is the reverse of `add_middleware`. Put CORS outermost.
+
+**Likely follow-ups**
+- *Where is the request body actually read?* Only when something awaits `request.body()`/`.json()`. FastAPI does it before dependencies run if a body parameter is declared. It isn't in `scope`. It arrives through ASGI `receive()`.
+- *Is `BackgroundTasks` a job queue?* No. It runs in the same process after the response, with no retries or persistence. Anything that must happen goes to Celery, arq or a broker.
+- *How many concurrent requests can one worker hold?* For async I/O, thousands, bounded by `--limit-concurrency`, memory and downstream pools. For `def` endpoints, about 40 at a time, set by the anyio limiter.
+
+**What a strong answer shows:** You know the hops outside Python, the ASGI contract, and FastAPI's own steps (DI caching, 422 vs 500, the threadpool fork), and you can name where each one fails in production.
+
+**Go deeper:** [[01.13 - FastAPI Request Lifecycle End to End]] (the full version, with a debugging map) · [[01.9 - ASGI and How Uvicorn Serves a Request]] · [[15.3 - Reading Uvicorn and Starlette]] · [[03.10 - Proxies and Load Balancers]] · [[03.11 - Timeouts and Deadlines Across Hops]]
+
+**Resource:** [FastAPI source: `fastapi/routing.py`](https://github.com/fastapi/fastapi/blob/master/fastapi/routing.py). `get_request_handler` *is* the FastAPI part of the lifecycle, and it's short. See also the [ASGI spec](https://asgi.readthedocs.io/en/latest/specs/main.html).
+
+---
+
+### Q10. How does dependency injection work in FastAPI? What about app lifecycle?
 
 **Answer**
 - **`Depends`:** declare what an endpoint needs (a DB session, the current user, a settings object, an LLM client). FastAPI resolves it per request, caching it within that request. Dependencies can depend on other dependencies.
@@ -151,9 +392,11 @@ Gotchas:
 
 **What a strong answer shows:** Clean resource management and testable design.
 
+**Go deeper:** [[01.13 - FastAPI Request Lifecycle End to End#Step 2 — Solve the dependency graph]] · [[01.10 - Connection Pools and Limits]]
+
 ---
 
-### Q9. How would you stream LLM responses to a frontend? SSE vs. WebSockets?
+### Q11. How would you stream LLM responses to a frontend? SSE vs. WebSockets?
 
 **Answer**
 - **SSE (Server-Sent Events):**
@@ -174,9 +417,11 @@ Practical concerns:
 
 **What a strong answer shows:** A clear choice with reasons, plus real-world issues like disconnects and buffering.
 
+**Go deeper:** [[04.1 - Choosing a Realtime Transport]] · [[04.2 - Server Sent Events]] · [[04.4 - Streaming LLM Responses]] · [[WebSocket]]
+
 ---
 
-### Q10. What makes a good REST API design?
+### Q12. What makes a good REST API design?
 
 **Answer**
 - **Resource-oriented URLs** (`/users/{id}/orders`), with HTTP methods used correctly: GET is safe; PUT and DELETE are idempotent; POST creates.
@@ -193,9 +438,11 @@ Practical concerns:
 
 **What a strong answer shows:** Practical conventions, especially idempotency, pagination and async job patterns.
 
+**Go deeper:** [[05.1 - REST Done Properly]] · [[05.3 - Error Design]] · [[03.4 - Idempotency and Safe Retries]]
+
 ---
 
-### Q11. Explain authentication vs. authorisation. JWT vs. sessions. What is OAuth2?
+### Q13. Explain authentication vs. authorisation. JWT vs. sessions. What is OAuth2?
 
 **Answer**
 - **Authentication (AuthN):** who are you? **Authorisation (AuthZ):** what are you allowed to do?
@@ -211,11 +458,13 @@ Practical concerns:
 
 **What a strong answer shows:** You don't mix up AuthN and AuthZ, and you know JWT's revocation tradeoff.
 
+**Go deeper:** [[14.1 - AuthN vs AuthZ]] · [[14.2 - Sessions Tokens and Rotation]] · [[14.3 - OAuth2 and OIDC]]
+
 ---
 
 ## Section C: Data and storage
 
-### Q12. What database fundamentals should a senior backend engineer know?
+### Q14. What database fundamentals should a senior backend engineer know?
 
 **Answer**
 - **Indexes:**
@@ -232,9 +481,133 @@ Practical concerns:
 
 **What a strong answer shows:** Practical fluency with performance and correctness: indexes, N+1, transactions, pooling.
 
+**Go deeper:** [[06.3 - Indexes Deep Dive]] · [[06.6 - Transactions and Isolation Levels]] · [[06.8 - Locking and Deadlocks]] · [[06.17 - Database Anti Patterns]] · for "optimize a DB at 10M req/s" see [[05 - System Design and Distributed Systems#Q7. Your DB-backed API serves 10M requests/second and responses take 5 seconds. How do you optimize it?]] and [[06.18 - Fixing a Slow Database at Scale]]
+
 ---
 
-### Q13. Explain caching strategies and their pitfalls.
+### Q15. How do you implement pagination, on both the API side and the database side?
+
+**Answer**
+
+**Two strategies, and the database is why one wins:**
+
+| | Offset / limit | Cursor (keyset / seek) |
+|---|---|---|
+| API | `?page=500&size=20` or `?offset=9980&limit=20` | `?limit=20&cursor=eyJjIjoi...` |
+| SQL | `ORDER BY created_at DESC LIMIT 20 OFFSET 9980` | `WHERE (created_at, id) < ($1, $2) ORDER BY created_at DESC, id DESC LIMIT 20` |
+| DB work per page | Reads **offset + limit** rows and throws away the offset. Page 500 reads 10,000 rows | Index seek straight to the position, then reads **limit** rows. **Same cost on every page** |
+| Consistency while data changes | Inserts and deletes shift every page: **duplicates and skipped rows** | Stable: the cursor is a position in the data, not a count |
+| Jump to page N / total pages | Easy | Not possible (only next/previous) |
+| Good for | Admin tables, small datasets, "page 3 of 12" UIs | Feeds, APIs, infinite scroll, exports, anything large or changing |
+
+**Database side: the three things that make keyset pagination work**
+
+1. **A deterministic sort with a unique tiebreaker.** `ORDER BY created_at DESC` alone is ambiguous when two rows share a timestamp, and rows get skipped or repeated at page boundaries. Always add `id`.
+2. **An index matching the sort exactly**, including any equality filters first:
+   ```sql
+   CREATE INDEX CONCURRENTLY idx_posts_feed ON posts (author_id, created_at DESC, id DESC);
+   ```
+3. **A row-value comparison** so Postgres can seek in the index:
+   ```sql
+   SELECT id, title, created_at
+   FROM posts
+   WHERE author_id = $1
+     AND (created_at, id) < ($2, $3)          -- strictly after the last row of the previous page
+   ORDER BY created_at DESC, id DESC
+   LIMIT 21;                                  -- limit + 1: the extra row tells you has_more
+   ```
+
+`EXPLAIN ANALYZE` shows the difference. Offset at page 5,000 is an `Index Scan` that reads 100k rows, taking tens or hundreds of ms and growing. Keyset at the same position reads 21 rows in under a millisecond.
+
+**API side: opaque cursors and a stable contract**
+
+```python
+import base64
+import json
+from datetime import datetime
+
+from fastapi import Depends, FastAPI, HTTPException, Query
+from pydantic import BaseModel
+
+MAX_LIMIT = 100
+
+
+def encode_cursor(created_at: datetime, id_: int) -> str:
+    raw = json.dumps({"c": created_at.isoformat(), "i": id_}).encode()
+    return base64.urlsafe_b64encode(raw).decode()
+
+
+def decode_cursor(cursor: str) -> tuple[datetime, int]:
+    try:
+        data = json.loads(base64.urlsafe_b64decode(cursor.encode()))
+        return datetime.fromisoformat(data["c"]), int(data["i"])
+    except Exception:
+        raise HTTPException(400, "invalid cursor")
+
+
+class PostOut(BaseModel):
+    id: int
+    title: str
+    created_at: datetime
+
+
+class Page(BaseModel):
+    items: list[PostOut]
+    next_cursor: str | None                  # null = last page
+    has_more: bool
+
+
+@app.get("/authors/{author_id}/posts", response_model=Page)
+async def list_posts(
+    author_id: int,
+    limit: int = Query(20, ge=1, le=MAX_LIMIT),     # always bounded: never let a client ask for 1M
+    cursor: str | None = None,
+    conn=Depends(get_conn),
+):
+    if cursor:
+        c_at, c_id = decode_cursor(cursor)
+        rows = await conn.fetch("""
+            SELECT id, title, created_at FROM posts
+            WHERE author_id = $1 AND (created_at, id) < ($2, $3)
+            ORDER BY created_at DESC, id DESC LIMIT $4""",
+            author_id, c_at, c_id, limit + 1)
+    else:
+        rows = await conn.fetch("""
+            SELECT id, title, created_at FROM posts
+            WHERE author_id = $1
+            ORDER BY created_at DESC, id DESC LIMIT $2""",
+            author_id, limit + 1)
+
+    has_more = len(rows) > limit
+    rows = rows[:limit]
+    next_cursor = encode_cursor(rows[-1]["created_at"], rows[-1]["id"]) if has_more else None
+    return Page(items=[dict(r) for r in rows], next_cursor=next_cursor, has_more=has_more)
+```
+
+**API design rules that interviewers probe:**
+- **Opaque cursors** (base64, or signed/encrypted if they mustn't be tampered with). Clients must not build them, so you can change the encoding later.
+- **Enforce a max `limit`** with a sensible default.
+- **`limit + 1` for `has_more`** instead of a `COUNT(*)`, which is a full scan on big tables. If the UI needs a total, show an estimate (`pg_class.reltuples`) or "1,000+".
+- **The cursor is tied to the sort and filters.** If the client changes the filter, it must start over. Encode the sort and filters in the cursor, or validate against them.
+- **Backwards pagination:** flip the comparison and sort direction (`>` and `ASC`), then reverse the result.
+- **Return links** (`next`, and `prev` if needed) in the body or an RFC 8288 `Link` header, so clients don't build URLs.
+- **GraphQL** standardizes this as Relay "connections" (`edges`, `pageInfo { hasNextPage endCursor }`).
+
+**Likely follow-ups**
+- *When is offset fine?* Small tables, admin back-offices, and when the product needs "jump to page 7". Even then, cap the maximum offset.
+- *Sorting by a non-unique, user-chosen column (price)?* Keyset on `(price, id)` with an index on `(price, id)`. One index per allowed sort, so limit which sorts you allow.
+- *Pagination over search results (Elasticsearch)?* `from + size` has the same deep-offset problem (capped at 10k by default). Use `search_after` with a point-in-time (PIT), which is the same keyset idea.
+- *Exporting a whole table?* Keyset batches (`WHERE id > last_id ORDER BY id LIMIT 5000`), or a server-side cursor / `COPY`. Never offset.
+
+**What a strong answer shows:** You explain *why* offset degrades (rows read and discarded), you know the tiebreaker and index requirements, and you design the API contract around opaque, bounded, stable cursors.
+
+**Go deeper:** [[05.2 - Versioning Pagination and Filtering]] (cursor design, cost, multiple sort columns, migrating from offset) · [[06.3 - Indexes Deep Dive]] · [[06.17 - Database Anti Patterns#3. Offset Pagination]] · [[02.18 - Iterator]]
+
+**Resource:** [Use The Index, Luke — "We need tool support for keyset pagination"](https://use-the-index-luke.com/no-offset), the canonical explanation with benchmarks. Also [Slack Engineering — Evolving API Pagination at Slack](https://slack.engineering/evolving-api-pagination-at-slack/), a real migration from offset to cursors.
+
+---
+
+### Q16. Explain caching strategies and their pitfalls.
 
 **Answer**
 **Patterns:**
@@ -255,9 +628,11 @@ Practical concerns:
 
 **What a strong answer shows:** You know the patterns and the failure modes, especially stampedes and stale data.
 
+**Go deeper:** Redis with working code in [[05 - System Design and Distributed Systems#Q6. How do you use Redis? Show me code.]] · [[07.2 - Cache Strategies and Invalidation]] · [[07.3 - Stampede Hot Keys and Negative Caching]] · [[Redis]]
+
 ---
 
-### Q14. How do you design background jobs and message queues reliably?
+### Q17. How do you design background jobs and message queues reliably?
 
 **Answer**
 - **Why use them:** move slow work (document ingestion, embedding, LLM batch jobs, emails) off the request path. The API returns quickly, and workers process the jobs.
@@ -274,11 +649,13 @@ Practical concerns:
 
 **What a strong answer shows:** Idempotency, DLQs and the outbox pattern: the hallmarks of someone who has run queues in production.
 
+**Go deeper:** Kafka in microservices with producer, outbox and consumer code in [[05 - System Design and Distributed Systems#Q4. How do you use a message queue like Kafka in a microservices architecture?]] · [[08.2 - Queue Semantics]] · [[08.6 - Retries Backoff and Dead Letters]] · [[09.3 - The Outbox Pattern]]
+
 ---
 
 ## Section D: Resilience and quality
 
-### Q15. What resilience patterns do you apply to calls between services?
+### Q18. What resilience patterns do you apply to calls between services?
 
 **Answer**
 - **Timeouts everywhere:** no network call without one. A missing timeout is how one slow dependency takes down a whole system.
@@ -298,9 +675,11 @@ Practical concerns:
 
 **What a strong answer shows:** You treat failure as normal and know how these patterns combine.
 
+**Go deeper:** [[11.2 - Timeouts Retries and Jitter]] · [[11.3 - Circuit Breakers and Bulkheads]] · [[11.6 - Graceful Degradation]]
+
 ---
 
-### Q16. What's your testing strategy for a Python backend?
+### Q19. What's your testing strategy for a Python backend?
 
 **Answer**
 - **The test pyramid:** many fast **unit** tests, fewer **integration** tests (real database via Testcontainers, real Redis), and a small number of **end-to-end** tests.
@@ -318,9 +697,11 @@ Practical concerns:
 
 **What a strong answer shows:** A balanced, pragmatic strategy: what to mock, what to test for real.
 
+**Go deeper:** [[10.9 - Testing Microservices]] · [[05.13 - Contract Testing and Schema Evolution]]
+
 ---
 
-### Q17. Which design patterns and principles do you actually use in Python?
+### Q20. Which design patterns and principles do you actually use in Python?
 
 **Answer**
 Python favours simple, pragmatic patterns:
@@ -339,9 +720,11 @@ Python favours simple, pragmatic patterns:
 
 **What a strong answer shows:** Patterns used to solve real problems (swappability, testability), not as decoration.
 
+**Go deeper:** SOLID with code and the look-alike patterns in [[06 - Design Principles and Patterns]] · [[02.25 - Telling Similar Patterns Apart]] · [[01.1 - SOLID Principles]]
+
 ---
 
-### Q18. How do you approach refactoring a legacy system?
+### Q21. How do you approach refactoring a legacy system?
 
 **Answer**
 1. **Understand first:** read the code, the traces and the logs, and talk to the people who own it. Map the critical paths and the riskiest areas.
@@ -356,7 +739,7 @@ Python favours simple, pragmatic patterns:
 
 ---
 
-### Q19. What does good observability look like for a backend?
+### Q22. What does good observability look like for a backend?
 
 **Answer**
 - **The three pillars:**
@@ -373,9 +756,11 @@ Python favours simple, pragmatic patterns:
 
 **What a strong answer shows:** Production experience. You'd know how to find the cause of an incident quickly.
 
+**Go deeper:** [[Observability]] · [[12.2 - SLI SLO and Error Budgets]] · [[12.3 - Instrumenting Conduit End to End]]
+
 ---
 
-### Q20. What does "clean code" mean to you? What do you look for in code review?
+### Q23. What does "clean code" mean to you? What do you look for in code review?
 
 **Answer**
 - **Readable before clever:** clear names, small focused functions, obvious control flow, consistent style (enforced by a formatter and linter, not debated in review).
@@ -397,7 +782,7 @@ Python favours simple, pragmatic patterns:
 
 ## Section E: Frontend essentials (full-stack)
 
-### Q21. What should a full-stack engineer know about React for AI-style apps?
+### Q24. What should a full-stack engineer know about React for AI-style apps?
 
 **Answer**
 - **Rendering model:** a component re-renders when its state or props change. Keep state as **local** as possible; lift it up only when siblings need it. Use context or a store (Zustand, Redux) for truly global state.
@@ -416,7 +801,7 @@ Python favours simple, pragmatic patterns:
 
 ## Section F: AI system design
 
-### Q22. How do you approach a system design interview?
+### Q25. How do you approach a system design interview?
 
 **Answer**
 Use a consistent structure, and talk through your reasoning:
@@ -430,9 +815,11 @@ Use a consistent structure, and talk through your reasoning:
 
 **What a strong answer shows:** Structured thinking and collaboration. Good interviewers care more about *how* you reason than about one "right" design.
 
+**Go deeper:** [[07.1 - How HLD Interviews Work]] · [[02.1 - Framework Overview]] · [[07.3 - Communicating Tradeoffs]] · [[05 - System Design and Distributed Systems]]
+
 ---
 
-### Q23. Design: an enterprise knowledge assistant that answers questions over the company's docs, wikis and tickets.
+### Q26. Design: an enterprise knowledge assistant that answers questions over the company's docs, wikis and tickets.
 
 **Answer outline**
 - **Requirements:**
@@ -456,9 +843,11 @@ Use a consistent structure, and talk through your reasoning:
 
 **What a strong answer shows:** End-to-end design, with security and evaluation built in.
 
+**Go deeper:** [[11.1 - Enterprise Search Assistant]] · [[11.2 - Internal Company Copilot]] · [[09.2 - Enterprise Search and Permission-Aware Retrieval]]
+
 ---
 
-### Q24. Design: a customer-support agent that can look up orders, issue refunds and escalate to humans.
+### Q27. Design: a customer-support agent that can look up orders, issue refunds and escalate to humans.
 
 **Answer outline**
 - **Requirements:** chat on web and mobile; actions on real systems; refund limits; auditability; 24/7; graceful hand-off to humans.
@@ -476,9 +865,11 @@ Use a consistent structure, and talk through your reasoning:
 
 **What a strong answer shows:** You design agents that take *actions* safely: permissions, limits, approvals and audit.
 
+**Go deeper:** [[11.3 - AI Support Agent]] · [[08.4 - Observability Guardrails and Cost Control]]
+
 ---
 
-### Q25. Design: an AI code-review assistant integrated into CI.
+### Q28. Design: an AI code-review assistant integrated into CI.
 
 **Answer outline**
 - **Trigger:** a PR webhook or a CI stage (e.g. Jenkins/GitHub Actions) on open or update.
@@ -499,7 +890,7 @@ Use a consistent structure, and talk through your reasoning:
 
 ---
 
-### Q26. Design: a centralised LLM gateway for the whole organisation.
+### Q29. Design: a centralised LLM gateway for the whole organisation.
 
 **Answer outline**
 - **Why:** teams each call providers directly, with scattered keys, no cost visibility, no consistent retries or guardrails, and lock-in.
@@ -521,11 +912,13 @@ Use a consistent structure, and talk through your reasoning:
 
 **What a strong answer shows:** Platform thinking: centralising cross-cutting concerns without blocking teams.
 
+**Go deeper:** [[10.4 - Model Routing and Multi-Model Architecture]] · [[14.3 - Multi-Tenancy Patterns for AI SaaS]]
+
 ---
 
 ## Section G: Senior-level conversations
 
-### Q27. How do you mentor engineers on AI best practices?
+### Q30. How do you mentor engineers on AI best practices?
 
 **Answer**
 - **Make good practice the easy path:** shared templates, reusable libraries (an LLM client with retries and tracing, guardrail middleware, eval harnesses), and example repos.
@@ -538,7 +931,7 @@ Use a consistent structure, and talk through your reasoning:
 
 ---
 
-### Q28. A stakeholder wants "an AI agent that does X" by next month. How do you respond?
+### Q31. A stakeholder wants "an AI agent that does X" by next month. How do you respond?
 
 **Answer**
 - **Understand the real goal** and success metric: what problem is this solving, and how will we know it worked?
@@ -554,3 +947,7 @@ Use a consistent structure, and talk through your reasoning:
 ## Further reading
 - [AWS Builders' Library: Timeouts, retries and backoff with jitter](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/): the classic article on resilience.
 - [FastAPI docs: Concurrency and async/await](https://fastapi.tiangolo.com/async/): the official explanation of `def` vs. `async def` and the event loop.
+
+---
+
+**Next:** [[05 - System Design and Distributed Systems]]
