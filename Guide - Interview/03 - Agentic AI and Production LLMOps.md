@@ -1,3 +1,13 @@
+**Up:** [[00 - Index (Interview)]] | **Prev:** [[02 - Retrieval-Augmented Generation (RAG)]]
+
+---
+
+# 03 — Agentic AI and Production LLMOps
+
+> Agents, tools, LangGraph, memory, multi-agent systems, MCP, security, evals, observability and cost.
+
+---
+
 ## Section A: Agent foundations
 
 ### Q1. What is an AI agent? How is it different from a chain or a workflow?
@@ -29,6 +39,8 @@ while not done and steps < max_steps:
 
 **What a strong answer shows:** A crisp definition, plus the judgement to prefer simpler designs.
 
+**Go deeper:** [[08.1 - What Agents Actually Are]] · [[08 - Agents Fundamentals]]
+
 ---
 
 ### Q2. Explain the ReAct pattern.
@@ -54,6 +66,8 @@ Today it's mostly implemented with **native tool calling** (structured tool call
 
 **What a strong answer shows:** You know the pattern *and* its failure modes in practice.
 
+**Go deeper:** [[08 - Agents Fundamentals]]
+
 ---
 
 ### Q3. Which other agent design patterns do you know?
@@ -70,6 +84,8 @@ Today it's mostly implemented with **native tool calling** (structured tool call
 - **Human-in-the-loop:** pause for approval at risky points (Q9).
 
 **What a strong answer shows:** A vocabulary of patterns, and when each one fits.
+
+**Go deeper:** [[09 - Agent Patterns and LangGraph]] · [[08.3 - Memory Planning and Reflection]]
 
 ---
 
@@ -95,6 +111,8 @@ Important points:
 
 **What a strong answer shows:** You understand where control and trust sit in the loop.
 
+**Go deeper:** [[03.11 - Structured Outputs and Tool Calling]] · [[14.2 - Function Calling and Structured Outputs]]
+
 ---
 
 ### Q5. What makes a tool well-designed for an agent?
@@ -111,6 +129,8 @@ Treat the tool interface as a UX for the model. Anthropic calls this the "agent-
 - **Dry-run modes** for destructive operations.
 
 **What a strong answer shows:** You think about tools as APIs designed for a fallible caller.
+
+**Go deeper:** [[14.2 - Function Calling and Structured Outputs]]
 
 ---
 
@@ -174,6 +194,8 @@ Core concepts:
 
 **What a strong answer shows:** You understand state, reducers, checkpointing and interrupts: the concepts that make agents production-ready, beyond "nodes and edges".
 
+**Go deeper:** [[07.2 - LangGraph and Stateful Workflows]] · [[09 - Agent Patterns and LangGraph]] · [[07.3 - Custom Orchestration vs Frameworks]]
+
 ---
 
 ### Q8. When should you use multi-agent systems? Supervisor vs. swarm?
@@ -196,6 +218,8 @@ Core concepts:
 - *How do you evaluate a multi-agent system?* Evaluate each agent's sub-task alone, plus end-to-end outcomes. Trace every handoff. Track cost and latency per agent.
 
 **What a strong answer shows:** Clear criteria for when multi-agent is worth it, plus knowledge of the topologies.
+
+**Go deeper:** [[08.2 - Agent Architectures - Single vs Multi]]
 
 ---
 
@@ -228,6 +252,8 @@ Design considerations:
 
 **What a strong answer shows:** Risk-based placement of approval points, plus knowing that durable state is what makes this possible.
 
+**Go deeper:** [[07.2 - LangGraph and Stateful Workflows]]
+
 ---
 
 ### Q10. How do you stop an agent from looping forever or burning money?
@@ -244,6 +270,8 @@ Use layered limits:
 8. **Monitoring:** alert on the distribution of steps per run, on cost per run, and on outliers.
 
 **What a strong answer shows:** Defence in depth, with both code-level guarantees and observability.
+
+**Go deeper:** [[08.4 - Observability Guardrails and Cost Control]]
 
 ---
 
@@ -276,6 +304,8 @@ Pitfalls:
 
 **What a strong answer shows:** A clear taxonomy, practical context management, and attention to the correctness and privacy of stored memories.
 
+**Go deeper:** [[08.3 - Memory Planning and Reflection]] · [[03.12 - Memory and Context Management]]
+
 ---
 
 ### Q12. What is context engineering?
@@ -292,6 +322,8 @@ Techniques:
 - Fetch information **just in time** with tools, instead of front-loading everything.
 
 **What a strong answer shows:** Awareness that agent quality is largely about managing what the model sees.
+
+**Go deeper:** [[03.12 - Memory and Context Management]]
 
 ---
 
@@ -317,6 +349,8 @@ Techniques:
 - **Red-team testing,** with injection cases in the eval suite.
 
 **What a strong answer shows:** You understand that prompt injection isn't "solved", and you design capabilities and permissions assuming the model can be manipulated.
+
+**Go deeper:** [[14.4 - AI Security]]
 
 ---
 
@@ -360,6 +394,8 @@ Guardrails sit at several layers:
 
 **What a strong answer shows:** Layered thinking, and awareness of the costs and failure modes of guardrails themselves.
 
+**Go deeper:** [[10.7 - Safety Systems and Abuse Prevention]] · [[14.4 - AI Security]]
+
 ---
 
 ### Q15. How do you evaluate an agent, not just a single LLM call?
@@ -379,6 +415,8 @@ Agents can succeed or fail along the *path*, not just in the final answer:
 - Keep a regression suite drawn from production failures.
 
 **What a strong answer shows:** You evaluate the process as well as the outcome, and handle non-determinism statistically.
+
+**Go deeper:** [[13.3 - Evaluation Deep Dive]] · [[06 - Evaluation]]
 
 ---
 
@@ -400,6 +438,8 @@ Tools: LangSmith, Langfuse, Braintrust, Arize Phoenix, promptfoo, DeepEval and R
 - *How do you trust an LLM judge?* Calibrate it: label ~50–100 examples by hand and measure agreement with the judge. Use clear rubrics with binary or few-level scores (more reliable than 1–10). Ask for reasoning before the verdict. Watch for position and length bias. Re-calibrate when you change the judge model.
 
 **What a strong answer shows:** A disciplined, CI-integrated quality process, which is exactly what "AI-driven SDLC" roles look for.
+
+**Go deeper:** [[10.5 - Evaluation Pipelines and Monitoring]] · [[06 - Evaluation]]
 
 ---
 
@@ -423,6 +463,8 @@ Tools: LangSmith, Langfuse, Braintrust, Arize Phoenix, promptfoo, DeepEval and R
 
 **What a strong answer shows:** You'd be able to answer "why was this answer wrong / slow / expensive?" for any single request.
 
+**Go deeper:** [[13.2 - LLM Observability Stack]]
+
 ---
 
 ### Q18. How do you control LLM costs at scale?
@@ -443,6 +485,8 @@ Tools: LangSmith, Langfuse, Braintrust, Arize Phoenix, promptfoo, DeepEval and R
 
 **What a strong answer shows:** You measure first, and use a toolbox of techniques while checking quality with evals.
 
+**Go deeper:** [[10.1 - Latency and Cost Optimization]] · [[10.2 - Caching Strategies]] · [[13.1 - Token Economics KV Cache Prefix Caching]]
+
 ---
 
 ### Q19. How do you reduce latency in an LLM application?
@@ -459,6 +503,8 @@ Tools: LangSmith, Langfuse, Braintrust, Arize Phoenix, promptfoo, DeepEval and R
 - **Speculative UX:** show progress steps ("Searching your documents…") during agent runs.
 
 **What a strong answer shows:** A focus on the critical path, and on both actual and perceived latency.
+
+**Go deeper:** [[10.1 - Latency and Cost Optimization]] · [[10.3 - Async Architecture and Streaming]]
 
 ---
 
@@ -477,6 +523,8 @@ Treat the provider like any flaky dependency:
 
 **What a strong answer shows:** Standard resilience engineering applied cleanly to LLMs.
 
+**Go deeper:** [[10.4 - Model Routing and Multi-Model Architecture]] · [[11.2 - Timeouts Retries and Jitter]] · [[11.3 - Circuit Breakers and Bulkheads]]
+
 ---
 
 ### Q21. How do you version and manage prompts?
@@ -489,6 +537,8 @@ Treat the provider like any flaky dependency:
 - **Pin model versions** alongside prompts. A prompt is only "tested" with a specific model.
 
 **What a strong answer shows:** Prompt management treated with the same rigour as code releases.
+
+**Go deeper:** [[10.6 - Prompt and Model Versioning]]
 
 ---
 
@@ -503,6 +553,8 @@ Treat the provider like any flaky dependency:
 - **Load and latency tests,** including streaming and concurrent agent runs.
 
 **What a strong answer shows:** You separate deterministic code testing from probabilistic behaviour evaluation.
+
+**Go deeper:** [[10.5 - Evaluation Pipelines and Monitoring]]
 
 ---
 
@@ -542,8 +594,14 @@ Treat the provider like any flaky dependency:
 
 **What a strong answer shows:** You know that LLM systems can regress without code changes, and you investigate with data.
 
+**Go deeper:** [[10.5 - Evaluation Pipelines and Monitoring]] · [[13.2 - LLM Observability Stack]]
+
 ---
 
 ## Further reading
 - [Anthropic: Building effective agents](https://www.anthropic.com/engineering/building-effective-agents): workflows vs. agents and the core patterns.
 - [OWASP Top 10 for LLM Applications](https://genai.owasp.org/llm-top-10/): prompt injection, excessive agency and the other main risks.
+
+---
+
+**Next:** [[04 - Python, Backend Engineering and AI System Design]]

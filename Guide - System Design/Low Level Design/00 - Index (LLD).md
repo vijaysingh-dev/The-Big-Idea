@@ -30,6 +30,7 @@ Foundations → Design Patterns → LLD Methodology → Mindset → Building Blo
 ### Overview
 
 - [[02.0 - Patterns Overview]] ← **Start here before individual patterns**
+- [[02.25 - Telling Similar Patterns Apart]] ← **Read after the patterns:** Adapter vs Strategy vs Factory and the other look-alike pairs
 
 ### Creational
 
