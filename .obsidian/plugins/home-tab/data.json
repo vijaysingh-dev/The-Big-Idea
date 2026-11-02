@@ -22,7 +22,16 @@
   "showShortcuts": true,
   "markdownOnly": false,
   "unresolvedLinks": false,
-  "recentFilesStore": [],
+  "recentFilesStore": [
+    {
+      "filepath": "Guide - Interview/04 - Python, Backend Engineering and AI System Design.md",
+      "timestamp": 1793528015781
+    },
+    {
+      "filepath": "Guide - Interview/02 - Retrieval-Augmented Generation (RAG).md",
+      "timestamp": 1793528004208
+    }
+  ],
   "bookmarkedFileStore": [],
   "searchDelay": 0,
   "replaceNewTabs": true,
