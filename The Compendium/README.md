@@ -42,20 +42,31 @@ One-line hook — why this is interesting.
 - [[related note]]
 ```
 
+## Naming convention
+
+All notes live in the GitHub repo [vijaysingh-dev/The-Big-Idea](https://github.com/vijaysingh-dev/The-Big-Idea), under the **The Compendium** folder:
+
+```
+The Compendium/<Topic Space Separated>/<NN - Space Separated Note>.md
+```
+
+- `<Topic Space Separated>` is the topic folder name, spaced out normally (e.g. `Health & Fitness`, `Artificial Intelligence`).
+- `<NN - Space Separated Note>` is a two-digit, zero-padded sequence number within that topic folder, a space, a hyphen, a space, then the note title (e.g. `01 - Human Body & Nutrition Basics.md`, `02 - Micronutrients & RDAs.md`). The number reflects build order within the topic, since notes are meant to be read sequentially and layer on each other.
+- A companion note that extends an existing one takes that note's number plus a letter (e.g. `11a - The Monthly Indian Meal Plan.md` after `11 - The Indian Plate - Rebuilding the Thali.md`), so it sorts next to its parent without renumbering later notes.
+- Links between notes are Obsidian wikilinks by bare note name, e.g. `[[11a - The Monthly Indian Meal Plan]]`.
+- `_Topic Log.md` and this `README.md` sit at the root of **The Compendium** folder, not inside any topic folder (the leading underscore keeps the log sorted to the top alongside topic folders).
+
 ## Tracking
 
 [_Topic Log.md](_Topic%20Log.md) lists every note created, so "surprise me" requests avoid repeats and can spot gaps across topics.
 
 ## What Claude should output for every note request
 
-1. **If Claude has file-write access to this repo (e.g. Claude Code):** write the note file into the matching topic folder (create the folder if it doesn't exist yet), following the Note format above.
-2. **If Claude cannot write files (e.g. chat mode):**
-   - State the folder path the note belongs in (e.g. `Topic/Title.md`), so it can be filed manually.
-   - Give the note as a downloadable file if the interface supports it; otherwise output the full note as markdown in the response.
-3. In both cases, also print one single-line table row for `_Topic Log.md`, in a fenced code block so it's easy to copy:
+Claude works directly in the GitHub repo. For every note request:
 
-   ```
-   | YYYY-MM-DD | Topic | [Title](Topic/Title.md) |
-   ```
-
-Do not edit `_Topic Log.md` directly — always hand back the line above for manual pasting.
+1. Pull the latest `main` first, so local edits made in Obsidian aren't overwritten.
+2. Create (or update) the note at `The Compendium/<Topic>/<NN - Title>.md`, following the naming convention and note format above. When a note is renamed or renumbered, update every wikilink that points to it.
+3. Add a row for the note at the top of `_Topic Log.md`.
+4. If the note is the first in a new topic, create the topic folder first.
+5. Update this `README.md` whenever the topic list, conventions, or workflow change.
+6. Commit the note, the log and any README change together, and push to `main`.

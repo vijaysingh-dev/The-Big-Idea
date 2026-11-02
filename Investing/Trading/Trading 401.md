@@ -1,3 +1,0 @@
-- Option expiry may add to volatility
-- Month End+ Quarter End has high probability of bullishness on index and some stocks
-- 

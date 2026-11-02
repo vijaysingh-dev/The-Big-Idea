@@ -1,3 +1,0 @@
-CHEAT - 
-SHAKEOUT - 
-POCKET PIVOT - 
