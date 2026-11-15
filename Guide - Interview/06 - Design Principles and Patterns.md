@@ -2,8 +2,6 @@
 
 ---
 
-# 06 — Design Principles and Patterns
-
 > SOLID with real Python, how principles and patterns relate, and how to stop confusing look-alike patterns (Adapter vs Strategy vs Factory, Strategy vs State, Decorator vs Proxy). The long-form material is in LLD. This file is the version you say out loud.
 
 ---

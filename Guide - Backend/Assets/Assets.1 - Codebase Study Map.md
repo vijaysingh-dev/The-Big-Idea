@@ -1,4 +1,4 @@
-**Up:** [[00 - Index (Backend)]] | **Prev:** [[16.10 - Phase 9 - RAG and the AI Handoff]]
+**Up:** [[00 - Index (Backend)]] | **Prev:** [[17.10 - Phase 9 - RAG and the AI Handoff]]
 
 ---
 
@@ -22,7 +22,7 @@ For each topic you will find:
 - **Question to answer** — what you must be able to explain afterwards
 - **Size** — how long a real reading session takes
 
-Do not try to understand a whole repo. Trace **one path** through it. See [[15.1 - How to Read a Large Codebase]].
+Do not try to understand a whole repo. Trace **one path** through it. See [[16.1 - How to Read a Large Codebase]].
 
 ---
 
@@ -80,7 +80,43 @@ Everything else below is a supplement to these.
 
 ---
 
-## 02 — Networking Foundations
+## 02 — Operating Systems
+
+### xv6 — a whole kernel you can read
+
+- **Repo**: `mit-pdos/xv6-riscv`
+- **Why this one**: A complete Unix-like kernel in about 10,000 lines. Processes, virtual memory, a scheduler, a journaling filesystem, pipes and locks, each small enough to read in one sitting. Nothing else teaches the OS this directly.
+- **Read**, in this order:
+  - `kernel/syscall.c`, `kernel/trap.c` — how a syscall enters the kernel
+  - `kernel/proc.c`, `kernel/swtch.S` — `fork`, `exit`, `wait`, the scheduler, the context switch
+  - `kernel/spinlock.c`, `kernel/sleeplock.c` — locks from an atomic swap upward
+  - `kernel/vm.c` — page tables, `walk()`, `uvmcopy()`
+  - `kernel/file.c`, `kernel/pipe.c` — file descriptors and a complete pipe
+  - `kernel/log.c`, `kernel/fs.c` — a write-ahead journal, inodes, directories
+- **Question to answer**: When a process calls `read()` on a pipe that is empty, trace the path from the syscall to the thread going to sleep, and back to it waking when the writer writes.
+- **Size**: 6–8 sessions across the section. Keep the xv6 book open alongside.
+
+### CPython's OS layer
+
+- **Repo**: `python/cpython`
+- **Read**: `Modules/signalmodule.c` → `Lib/asyncio/unix_events.py` (`add_signal_handler`) → `Modules/_posixsubprocess.c` → `Objects/obmalloc.c` (top comment) → `Lib/multiprocessing/shared_memory.py`
+- **Question to answer**: Where does a Unix signal become Python code running, and why only in the main thread?
+- **Size**: 2 sessions.
+
+### gunicorn — a process supervisor
+
+- **Repo**: `benoitc/gunicorn`
+- **Read**: `gunicorn/arbiter.py` → `gunicorn/workers/workertmp.py` → `gunicorn/sock.py`
+- **Question to answer**: How does the master detect a hung worker, and how does a binary upgrade keep the listening socket open?
+- **Size**: 1 session.
+
+### Tooling drill (not reading — doing)
+
+- `strace -f -c` a uvicorn worker under load; `py-spy dump` a deadlocked process; `cat /sys/fs/cgroup/cpu.stat` inside a throttled container; get one container OOM-killed and read `dmesg`.
+
+---
+
+## 03 — Networking Foundations
 
 ### Redis networking layer
 
@@ -116,7 +152,7 @@ Everything else below is a supplement to these.
 
 ---
 
-## 03 — HTTP
+## 04 — HTTP
 
 ### Caddy — a modern HTTP server in readable Go
 
@@ -140,7 +176,7 @@ Everything else below is a supplement to these.
 
 ---
 
-## 04 — Realtime Transports
+## 05 — Realtime Transports
 
 ### vLLM — real SSE streaming at scale
 
@@ -173,7 +209,7 @@ Everything else below is a supplement to these.
 
 ---
 
-## 05 — API Design and Styles
+## 06 — API Design and Styles
 
 ### graphql-core — the reference execution engine
 
@@ -210,7 +246,7 @@ Everything else below is a supplement to these.
 
 ---
 
-## 06 — Databases
+## 07 — Databases
 
 ### PgBouncer — a connection pooler you can actually read
 
@@ -247,7 +283,7 @@ Everything else below is a supplement to these.
 
 ---
 
-## 07 — Caching and Coordination
+## 08 — Caching and Coordination
 
 ### Redis (again, different files)
 
@@ -263,7 +299,7 @@ Everything else below is a supplement to these.
 
 ---
 
-## 08 — Background Work
+## 09 — Background Work
 
 ### Celery + Kombu
 
@@ -299,7 +335,7 @@ Everything else below is a supplement to these.
 
 ---
 
-## 09 — Event Streaming
+## 10 — Event Streaming
 
 ### Kafka
 
@@ -341,7 +377,7 @@ Everything else below is a supplement to these.
 
 ---
 
-## 12 — Observability
+## 13 — Observability
 
 ### OpenTelemetry Python
 

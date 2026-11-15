@@ -8,7 +8,7 @@
 
 > **The rule:** you have not learned a topic until you have built it. Reading gives you recognition. Building gives you recall.
 >
-> Every exercise below is **multi-file and runnable**. None of them are toys you delete after an hour — the drills feed into Conduit, the capstone project in section 16.
+> Every exercise below is **multi-file and runnable**. None of them are toys you delete after an hour — the drills feed into Conduit, the capstone project in section 17.
 
 ---
 
@@ -89,14 +89,35 @@ Run one FastAPI app against Postgres with pool sizes 1, 5, 20, 100, 500. Load te
 
 ---
 
-## Section 02 — Networking
+## Section 02 — Operating Systems
 
-### Drill 2.1 — A raw TCP server, three ways
+| Drill | Build | Done when |
+|---|---|---|
+| **2.1 — The cost of crossing the wall** | Syscall micro-benchmarks; write-size sweep under `strace -c` | Throughput-vs-bytes-per-write chart; you can predict syscall counts |
+| **2.2 — A tiny shell and a reaper** | `fork`/`exec`/`wait` shell with `>` and `\|`; zombie reaper; copy-on-write demo | Two-stage pipeline works; chart of child private memory vs objects touched |
+| **2.3 — Reproduce CPU throttling** | Same app with and without a cgroup CPU limit under k6 | Table showing ~30% average CPU with a much worse p99, and throttle counts proving why |
+| **2.4 — Races, locks and a deadlock** | Own `Semaphore` and bounded queue from `Lock` + `Condition`; a deliberate deadlock | Queue passes concurrency tests; annotated `py-spy dump` of the deadlock |
+| **2.5 — See laziness** | VSZ vs RSS vs faults as you touch memory; `mmap` vs `read` | VSZ/RSS/fault table; cold vs warm cache comparison |
+| **2.6 — Fragment, leak, get OOM-killed** | Fragmentation demo, planted leak found with tracemalloc + memray, OOM kill | Exit 137 + `dmesg` + `memory.events` captured; leak found with tools only |
+| **2.7 — Run out of fds** | fd leak under `ulimit -n 256`; blocking vs select vs asyncio echo servers | fd-count chart for leak and fix; three-server comparison table |
+| **2.8 — Durability you can measure** | fsync strategy benchmark; atomic write; a mini WAL with CRCs | WAL survives 100 random truncations with zero corrupt records replayed |
+| **2.9 — Make docker stop graceful** | Shell form vs exec form vs tini; asyncio drain on `SIGTERM` | Fixed versions stop in under 1 s with exit 0 and zero lost jobs |
+| **2.10 — Four ways to talk** | Pipe/UDS/TCP/shared-memory ping-pong; a prefork master with heartbeats | Latency table; master survives `kill -9` of workers under load |
+| **2.11 — Diagnose five planted problems** | A chaos-toggle stack and your own RUNBOOK.md | Each scenario identified in under 5 minutes |
+| **2.12 — Trace one request through everything** | strace + perf + bpftrace timeline of one request | Timeline accounts for 90%+ of wall time, layer by layer |
+
+Full specs live in each note's Exercise box.
+
+---
+
+## Section 03 — Networking
+
+### Drill 3.1 — A raw TCP server, three ways
 
 Same protocol, three implementations, one benchmark harness.
 
 ```
-drills/02-tcp-three-ways/
+drills/03-tcp-three-ways/
 ├── protocol.py       # a tiny length-prefixed binary protocol
 ├── server_thread.py  # thread per connection
 ├── server_select.py  # select/poll loop
@@ -109,10 +130,10 @@ drills/02-tcp-three-ways/
 
 ---
 
-### Drill 2.2 — Break TCP on purpose
+### Drill 3.2 — Break TCP on purpose
 
 ```
-drills/02-tcp-pathology/
+drills/03-tcp-pathology/
 ├── slow_reader.py    # client that connects and never reads
 ├── half_open.py      # kill a client's network without closing the socket
 ├── observe.sh        # ss/tcpdump commands to watch what happens
@@ -123,14 +144,14 @@ drills/02-tcp-pathology/
 
 ---
 
-## Section 03 — HTTP
+## Section 04 — HTTP
 
-### Drill 3.1 — Write an HTTP/1.1 server
+### Drill 4.1 — Write an HTTP/1.1 server
 
 No `http.server`, no framework. Parse bytes yourself.
 
 ```
-drills/03-http-server/
+drills/04-http-server/
 ├── parser.py        # request line, headers, chunked body — a state machine
 ├── response.py      # serialization, content-length vs chunked
 ├── connection.py    # keep-alive, pipelining, timeouts
@@ -147,10 +168,10 @@ drills/03-http-server/
 
 ---
 
-### Drill 3.2 — Caching reverse proxy
+### Drill 4.2 — Caching reverse proxy
 
 ```
-drills/03-proxy/
+drills/04-proxy/
 ├── proxy.py         # forwards requests upstream
 ├── cache.py         # respects Cache-Control, ETag, Vary
 ├── revalidate.py    # conditional requests, 304 handling
@@ -161,12 +182,12 @@ drills/03-proxy/
 
 ---
 
-## Section 04 — Realtime
+## Section 05 — Realtime
 
-### Drill 4.1 — SSE from scratch, both ends
+### Drill 5.1 — SSE from scratch, both ends
 
 ```
-drills/04-sse/
+drills/05-sse/
 ├── server.py        # raw SSE: event, data, id, retry fields
 ├── client.py        # a client that reconnects with Last-Event-ID
 ├── broker.py        # in-memory topic fanout with per-client bounded queues
@@ -180,10 +201,10 @@ drills/04-sse/
 
 ---
 
-### Drill 4.2 — Multi-node chat backplane
+### Drill 5.2 — Multi-node chat backplane
 
 ```
-drills/04-backplane/
+drills/05-backplane/
 ├── node.py          # WebSocket server holding connections
 ├── backplane.py     # Redis pub/sub so node A reaches node B's clients
 ├── presence.py      # who is online, with TTL heartbeats
@@ -195,14 +216,14 @@ drills/04-backplane/
 
 ---
 
-## Section 05 — APIs
+## Section 06 — APIs
 
-### Drill 5.1 — A GraphQL execution engine
+### Drill 6.1 — A GraphQL execution engine
 
 Not a wrapper. The engine.
 
 ```
-drills/05-graphql/
+drills/06-graphql/
 ├── lexer.py
 ├── parser.py        # query document → AST
 ├── schema.py        # type definitions, field resolvers
@@ -217,12 +238,12 @@ drills/05-graphql/
 
 ---
 
-### Drill 5.2 — Same API, three ways
+### Drill 6.2 — Same API, three ways
 
 One domain (orders). Three interfaces. One benchmark.
 
 ```
-drills/05-three-apis/
+drills/06-three-apis/
 ├── domain/          # shared business logic — no protocol code here
 ├── rest/
 ├── graphql/
@@ -235,12 +256,12 @@ drills/05-three-apis/
 
 ---
 
-## Section 06 — Databases
+## Section 07 — Databases
 
-### Drill 6.1 — Index detective
+### Drill 7.1 — Index detective
 
 ```
-drills/06-index-lab/
+drills/07-index-lab/
 ├── seed.py          # generate 10M realistic rows
 ├── queries.sql      # 15 queries: some indexable, some not
 ├── plans/           # saved EXPLAIN ANALYZE output before and after
@@ -251,10 +272,10 @@ drills/06-index-lab/
 
 ---
 
-### Drill 6.2 — Break isolation
+### Drill 7.2 — Break isolation
 
 ```
-drills/06-isolation/
+drills/07-isolation/
 ├── anomalies.py     # reproduce dirty read, non-repeatable read, phantom, write skew
 ├── runner.py        # two sessions, controlled interleaving
 └── FINDINGS.md      # which anomaly appears at which isolation level
@@ -264,10 +285,10 @@ drills/06-isolation/
 
 ---
 
-### Drill 6.3 — Zero downtime migration
+### Drill 7.3 — Zero downtime migration
 
 ```
-drills/06-migration/
+drills/07-migration/
 ├── app_v1.py        # running app, taking constant write traffic
 ├── migrate/         # expand → backfill → switch → contract, four steps
 ├── load.py          # keeps writing throughout
@@ -280,12 +301,12 @@ drills/06-migration/
 
 ---
 
-## Section 07 — Caching
+## Section 08 — Caching
 
-### Drill 7.1 — Cache with the hard parts included
+### Drill 8.1 — Cache with the hard parts included
 
 ```
-drills/07-cache/
+drills/08-cache/
 ├── cache.py         # cache-aside with TTL and jitter
 ├── stampede.py      # single-flight lock + probabilistic early expiry
 ├── lock.py          # distributed lock with fencing tokens and lease renewal
@@ -297,14 +318,14 @@ drills/07-cache/
 
 ---
 
-## Section 08 — Background Work
+## Section 09 — Background Work
 
-### Drill 8.1 — Build a task queue
+### Drill 9.1 — Build a task queue
 
 No Celery.
 
 ```
-drills/08-taskqueue/
+drills/09-taskqueue/
 ├── broker.py        # Redis-backed queue with visibility timeout
 ├── worker.py        # prefetch, ack after execution, graceful shutdown
 ├── task.py          # decorator, serialization, versioning
@@ -319,10 +340,10 @@ drills/08-taskqueue/
 
 ---
 
-### Drill 8.2 — Saga
+### Drill 9.2 — Saga
 
 ```
-drills/08-saga/
+drills/09-saga/
 ├── steps.py         # 4 steps, each with a compensating action
 ├── orchestrator.py  # state machine, persisted, resumable
 ├── failure_matrix/  # a test per failure point
@@ -333,14 +354,14 @@ drills/08-saga/
 
 ---
 
-## Section 09 — Event Streaming
+## Section 10 — Event Streaming
 
-### Drill 9.1 — Build a log
+### Drill 10.1 — Build a log
 
 Kafka's core idea, minus the distribution.
 
 ```
-drills/09-log/
+drills/10-log/
 ├── segment.py       # append-only file, sparse index, offsets
 ├── log.py           # partitions, retention, compaction
 ├── consumer.py      # consumer groups, offset commits, rebalance
@@ -352,10 +373,10 @@ drills/09-log/
 
 ---
 
-### Drill 9.2 — Outbox + CDC
+### Drill 10.2 — Outbox + CDC
 
 ```
-drills/09-outbox/
+drills/10-outbox/
 ├── service.py       # writes business row + outbox row in one transaction
 ├── relay.py         # polls outbox, publishes, marks sent
 ├── cdc_relay.py     # same thing via logical replication instead
@@ -367,12 +388,12 @@ drills/09-outbox/
 
 ---
 
-## Sections 10–11 — Microservices and Reliability
+## Sections 11–12 — Microservices and Reliability
 
-### Drill 11.1 — A resilience toolkit
+### Drill 12.1 — A resilience toolkit
 
 ```
-drills/11-resilience/
+drills/12-resilience/
 ├── breaker.py       # closed/open/half-open, sliding window
 ├── bulkhead.py      # isolated concurrency pools per dependency
 ├── shed.py          # load shedding based on queue depth and latency
@@ -460,7 +481,7 @@ That is roughly one topic a week. Twelve months gets you through everything with
 |---|---|
 | [Build Your Own X](https://github.com/codecrafters-io/build-your-own-x) | Curated build-from-scratch guides for almost every drill above |
 | [CodeCrafters](https://codecrafters.io/) | Paid, but the Redis / HTTP server / Kafka / SQLite tracks are graded and rigorous |
-| [Designing Data-Intensive Applications — Kleppmann](https://dataintensive.net/) | The reference text for sections 06–11. Read it alongside, not before |
+| [Designing Data-Intensive Applications — Kleppmann](https://dataintensive.net/) | The reference text for sections 07–12. Read it alongside, not before |
 | [Architecture Decision Records — Michael Nygard](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) | The original ADR post. Two pages, permanently useful |
 | [k6 documentation](https://grafana.com/docs/k6/latest/) | The load testing tool used in every Conduit phase |
 

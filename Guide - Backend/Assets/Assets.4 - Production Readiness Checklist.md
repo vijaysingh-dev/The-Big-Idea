@@ -14,7 +14,7 @@
 
 💡 **Run it as an audit, not a gate.** Every "no" is either fixed or gets a written justification with a reconsideration trigger.
 
-⚠️ **Automate what you can.** A checklist a human runs is a checklist a human forgets ([[06.17 - Database Anti Patterns]]).
+⚠️ **Automate what you can.** A checklist a human runs is a checklist a human forgets ([[07.17 - Database Anti Patterns]]).
 
 | Item | Automation |
 |---|---|
@@ -90,7 +90,7 @@ assert pool_size * worker_count * replica_count <= db_max_connections
 □  A CI linter rejects dangerous operations
 ```
 
-💡 **The N-1 test is the one that makes rollback safe** ([[06.11 - Zero Downtime Migrations]]).
+💡 **The N-1 test is the one that makes rollback safe** ([[07.11 - Zero Downtime Migrations]]).
 
 ---
 
@@ -108,7 +108,7 @@ assert pool_size * worker_count * replica_count <= db_max_connections
 □  Locks not in a cache instance with allkeys-* eviction
 ```
 
-⚠️ **The Redis-outage test is the one most likely to fail** and the most important ([[07.1 - Cache Layers Across One Request]]).
+⚠️ **The Redis-outage test is the one most likely to fail** and the most important ([[08.1 - Cache Layers Across One Request]]).
 
 ---
 
@@ -128,7 +128,7 @@ assert pool_size * worker_count * replica_count <= db_max_connections
 □  Job last-success timestamps, with absence alerting
 ```
 
-💡 **`acks_late=True` is not the default**, and the default is at-most-once ([[15.4 - Reading the Celery Worker Loop]]).
+💡 **`acks_late=True` is not the default**, and the default is at-most-once ([[16.4 - Reading the Celery Worker Loop]]).
 
 ---
 
@@ -148,7 +148,7 @@ assert pool_size * worker_count * replica_count <= db_max_connections
 □  Trace context propagated through the outbox and the broker
 ```
 
-⚠️ **An inactive replication slot silently fills the primary's disk.** It is the highest-severity failure in this section ([[06.7 - MVCC Vacuum and Bloat]]).
+⚠️ **An inactive replication slot silently fills the primary's disk.** It is the highest-severity failure in this section ([[07.7 - MVCC Vacuum and Bloat]]).
 
 ---
 
@@ -174,7 +174,7 @@ assert pool_size * worker_count * replica_count <= db_max_connections
 □  Replicas spread across zones; PDB set and satisfiable
 ```
 
-⚠️ **Test the "if slow" case for every dependency, not just "if down".** Most systems pass the second and fail the first ([[11.1 - How Systems Fail]]).
+⚠️ **Test the "if slow" case for every dependency, not just "if down".** Most systems pass the second and fail the first ([[12.1 - How Systems Fail]]).
 
 ---
 
@@ -210,7 +210,7 @@ assert pool_size * worker_count * replica_count <= db_max_connections
 □  automountServiceAccountToken: false where unused
 ```
 
-💡 **The cross-tenant probe with coverage enforcement is the highest-value security test in a multi-tenant product** ([[14.6 - Multi Tenant Isolation]]).
+💡 **The cross-tenant probe with coverage enforcement is the highest-value security test in a multi-tenant product** ([[15.6 - Multi Tenant Isolation]]).
 
 ---
 
@@ -285,7 +285,7 @@ assert pool_size * worker_count * replica_count <= db_max_connections
 □  Backup restore tested, not assumed
 ```
 
-⚠️ **"Backup restore tested" is the item most often marked yes without evidence.** A restore procedure that has never been executed does not work ([[11.10 - Incidents and Postmortems]]).
+⚠️ **"Backup restore tested" is the item most often marked yes without evidence.** A restore procedure that has never been executed does not work ([[12.10 - Incidents and Postmortems]]).
 
 ---
 

@@ -2,8 +2,6 @@
 
 ---
 
-# 05 — System Design and Distributed Systems
-
 > Distributed-systems theory (CAP, consistency, partitioning), messaging (Kafka in microservices), Redis with working code, and scaling a database. Each answer is written the way you'd say it, followed by the code to put on the whiteboard, the likely follow-ups, and links to the notes that go deeper.
 
 ---
@@ -77,7 +75,7 @@ SET LOCAL synchronous_commit = 'local';         -- don't wait for replicas: fast
 
 **What a strong answer shows:** You know P isn't optional, you know CAP's "consistency" means linearizability (not the C in ACID), you bring up PACELC unprompted, and you treat it as a per-operation business decision.
 
-**Go deeper:** [[01.5 - CAP and PACELC]] · [[01.6 - Consistency Models]] · [[06.12 - Replication and Failover]]
+**Go deeper:** [[01.5 - CAP and PACELC]] · [[01.6 - Consistency Models]] · [[07.12 - Replication and Failover]]
 
 **Resource:** [Martin Kleppmann — "Please stop calling databases CP or AP"](https://martin.kleppmann.com/2015/05/11/please-stop-calling-databases-cp-or-ap.html): the clearest critique of how CAP gets misused, from the author of DDIA.
 
@@ -174,7 +172,7 @@ That's CAP turned into numbers: lower W and R → more available and faster, but
 
 **What a strong answer shows:** You disambiguate the overloaded words without being asked, you can do availability arithmetic, and you connect quorums to the CAP tradeoff.
 
-**Go deeper:** [[01.6 - Consistency Models]] · [[01.4 - Core Properties]] · [[01.11 - Distributed Concepts]] · [[06.13 - Partitioning and Sharding]] · [[07.6 - Leader Election and Coordination]]
+**Go deeper:** [[01.6 - Consistency Models]] · [[01.4 - Core Properties]] · [[01.11 - Distributed Concepts]] · [[07.13 - Partitioning and Sharding]] · [[08.6 - Leader Election and Coordination]]
 
 **Resource:** [Jepsen — Consistency Models](https://jepsen.io/consistency): a clickable map of every consistency model and how they relate, from the team that tests real databases against them.
 
@@ -184,7 +182,7 @@ That's CAP turned into numbers: lower W and R → more available and faster, but
 
 **Answer**
 
-Each service owns its database ([[10.4 - Data Ownership]]), so a single ACID transaction can't span "create order" in one service and "charge card" in another. Two-phase commit (2PC) exists, but it blocks when the coordinator fails, couples every service's availability together, and most brokers and NoSQL stores don't support it. The practical toolkit:
+Each service owns its database ([[11.4 - Data Ownership]]), so a single ACID transaction can't span "create order" in one service and "charge card" in another. Two-phase commit (2PC) exists, but it blocks when the coordinator fails, couples every service's availability together, and most brokers and NoSQL stores don't support it. The practical toolkit:
 
 1. **Saga.** A sequence of local transactions, each with a **compensating action** that undoes it if a later step fails.
    - **Choreography:** services react to each other's events. No central brain. Works for 2–4 steps, and gets hard to follow beyond that.
@@ -208,7 +206,7 @@ Order saga (orchestrated):
 
 **What a strong answer shows:** You know why 2PC is avoided, you can name outbox + saga + idempotency together, and you treat compensations as business operations.
 
-**Go deeper:** [[10.5 - Distributed Transactions and Sagas]] · [[09.3 - The Outbox Pattern]] · [[02.24 - Saga Pattern]] · [[08.11 - Durable Workflows and Sagas]]
+**Go deeper:** [[11.5 - Distributed Transactions and Sagas]] · [[10.3 - The Outbox Pattern]] · [[02.24 - Saga Pattern]] · [[09.11 - Durable Workflows and Sagas]]
 
 **Resource:** [microservices.io — Saga pattern](https://microservices.io/patterns/data/saga.html) and [Transactional outbox](https://microservices.io/patterns/data/transactional-outbox.html), from Chris Richardson.
 
@@ -248,7 +246,7 @@ Order saga (orchestrated):
 | Handler | **Idempotent** (dedupe by event ID) | Because of at-least-once |
 | Failures | Retry with backoff → **dead-letter topic** | One poison message mustn't block the partition forever |
 | Publishing from a service | **Outbox** table + relay | DB write and event publish must not diverge |
-| Schemas | Avro/Protobuf/JSON Schema + registry, backward-compatible | Producers and consumers deploy independently ([[09.6 - Schema Registry and Compatibility]]) |
+| Schemas | Avro/Protobuf/JSON Schema + registry, backward-compatible | Producers and consumers deploy independently ([[10.6 - Schema Registry and Compatibility]]) |
 
 **Code: producer (inside a FastAPI service)**
 
@@ -408,7 +406,7 @@ async def consume(pool):
 
 **What a strong answer shows:** Partition keys for ordering, consumer groups for scale, at-least-once + idempotency, the outbox for the dual-write problem, and DLQs, all in one coherent design.
 
-**Go deeper:** [[Kafka]] (internals, producer and consumer configs, rebalancing) · [[03.8 - Message Queues and Kafka]] · [[09.1 - Queue vs Log]] · [[09.2 - Event Modeling]] · [[09.3 - The Outbox Pattern]] · [[09.8 - Kafka Recap and Where It Fits]] · [[10.3 - Communication Patterns]] · [[08.6 - Retries Backoff and Dead Letters]]
+**Go deeper:** [[Kafka]] (internals, producer and consumer configs, rebalancing) · [[03.8 - Message Queues and Kafka]] · [[10.1 - Queue vs Log]] · [[10.2 - Event Modeling]] · [[10.3 - The Outbox Pattern]] · [[10.8 - Kafka Recap and Where It Fits]] · [[11.3 - Communication Patterns]] · [[09.6 - Retries Backoff and Dead Letters]]
 
 **Resource:** [Confluent — Kafka Design (official docs)](https://docs.confluent.io/kafka/design/index.html) and [Jay Kreps — "The Log: What every software engineer should know"](https://engineering.linkedin.com/distributed-systems/log-what-every-software-engineer-should-know-about-real-time-datas-unifying), the essay that explains why Kafka is a log and not a queue.
 
@@ -434,7 +432,7 @@ The core split is **queue** vs **log**:
 
 **Rule of thumb:** "do this job once" → a queue (SQS, RabbitMQ, Celery on top). "This happened, and whoever cares can react, now or later" → a log (Kafka).
 
-**Go deeper:** [[09.1 - Queue vs Log]] · [[08.4 - Brokers and Result Backends]] · [[Kafka#Kafka vs Redis Streams vs RabbitMQ]] · [[03.9 - PubSub and Event Bus]]
+**Go deeper:** [[10.1 - Queue vs Log]] · [[09.4 - Brokers and Result Backends]] · [[Kafka#Kafka vs Redis Streams vs RabbitMQ]] · [[03.9 - PubSub and Event Bus]]
 
 **Resource:** [AWS — The difference between RabbitMQ and Kafka](https://aws.amazon.com/compare/the-difference-between-rabbitmq-and-kafka/): a fairly neutral side-by-side of the queue model and the log model.
 
@@ -556,7 +554,7 @@ async def with_lock(r: redis.Redis, name: str, ttl_ms: int, fn):
         await r.eval(RELEASE, 1, f"lock:{name}", token)
 ```
 
-> ⚠️ A Redis lock is fine for **efficiency** (avoid duplicate work). For **correctness** (never two writers), add a **fencing token** that the storage layer checks, because a GC pause can outlive the TTL. See [[07.4 - Distributed Locks Done Right]].
+> ⚠️ A Redis lock is fine for **efficiency** (avoid duplicate work). For **correctness** (never two writers), add a **fencing token** that the storage layer checks, because a GC pause can outlive the TTL. See [[08.4 - Distributed Locks Done Right]].
 
 **4. Idempotency key for a POST**
 
@@ -623,7 +621,7 @@ for _stream, entries in msgs:
 
 **What a strong answer shows:** You pick data structures by problem, you write atomic patterns (pipelines, `NX`, Lua), and you know the operational traps: memory, persistence, hot keys, `KEYS`.
 
-**Go deeper:** [[Redis]] (every data type with code, locks, rate limiting, streams) · [[03.5 - Redis Patterns]] · [[07.2 - Cache Strategies and Invalidation]] · [[07.3 - Stampede Hot Keys and Negative Caching]] · [[07.5 - Idempotency Keys and Deduplication]] · [[15.2 - Reading Redis Networking]]
+**Go deeper:** [[Redis]] (every data type with code, locks, rate limiting, streams) · [[03.5 - Redis Patterns]] · [[08.2 - Cache Strategies and Invalidation]] · [[08.3 - Stampede Hot Keys and Negative Caching]] · [[08.5 - Idempotency Keys and Deduplication]] · [[16.2 - Reading Redis Networking]]
 
 **Resource:** [Redis docs — Data types](https://redis.io/docs/latest/develop/data-types/) and [redis-py asyncio examples](https://redis.readthedocs.io/en/stable/examples/asyncio_examples.html).
 
@@ -675,7 +673,7 @@ CREATE INDEX CONCURRENTLY idx_orders_cust_created ON orders (customer_id, create
 
 **What a strong answer shows:** You challenge the premise with arithmetic, measure before fixing, fix cheapest-first, and understand that the database's job at scale is to serve only cache misses.
 
-**Go deeper:** [[06.18 - Fixing a Slow Database at Scale]] (the full playbook with code) · [[06.3 - Indexes Deep Dive]] · [[06.4 - Reading EXPLAIN ANALYZE]] · [[06.9 - Connection Pooling and PgBouncer]] · [[06.13 - Partitioning and Sharding]] · [[Assets.3 - Numbers To Know]] · [[02.3 - Estimation and Capacity]]
+**Go deeper:** [[07.18 - Fixing a Slow Database at Scale]] (the full playbook with code) · [[07.3 - Indexes Deep Dive]] · [[07.4 - Reading EXPLAIN ANALYZE]] · [[07.9 - Connection Pooling and PgBouncer]] · [[07.13 - Partitioning and Sharding]] · [[Assets.3 - Numbers To Know]] · [[02.3 - Estimation and Capacity]]
 
 **Resource:** [Use The Index, Luke](https://use-the-index-luke.com/) for indexing, and [Figma's database scaling story](https://www.figma.com/blog/how-figmas-databases-team-lived-to-tell-the-scale/) for what the whole journey looks like for real.
 
@@ -694,7 +692,7 @@ CREATE INDEX CONCURRENTLY idx_orders_cust_created ON orders (customer_id, create
   - **Graph**: deep relationship traversal.
 - **Replication** copies the same data for **read scale and availability**. **Sharding** splits data for **write scale and size.** They're complementary: each shard is usually replicated.
 
-**Go deeper:** [[03.6 - Databases SQL and NoSQL]] · [[Assets.2 - DB Selection and Checklists]] · [[06.14 - Beyond Postgres]] · [[03.7 - Replication and Read Replicas]]
+**Go deeper:** [[03.6 - Databases SQL and NoSQL]] · [[Assets.2 - DB Selection and Checklists]] · [[07.14 - Beyond Postgres]] · [[03.7 - Replication and Read Replicas]]
 
 **Resource:** *Designing Data-Intensive Applications* (Kleppmann), chapters 2 (data models), 5 (replication) and 6 (partitioning).
 
@@ -708,18 +706,18 @@ These come up constantly. The answers already live in the vault, so drill from t
 |---|---|
 | How do you approach an HLD interview? | [[07.1 - How HLD Interviews Work]] · [[02.1 - Framework Overview]] |
 | Back-of-envelope estimation (QPS, storage, bandwidth) | [[02.3 - Estimation and Capacity]] · [[Assets.1 - Estimation Cheatsheet]] |
-| Design a rate limiter | [[04.1 - Rate Limiter]] · [[03.14 - Rate Limiters]] · [[11.5 - Rate Limiting and Quotas]] |
+| Design a rate limiter | [[04.1 - Rate Limiter]] · [[03.14 - Rate Limiters]] · [[12.5 - Rate Limiting and Quotas]] |
 | Design a URL shortener | [[06.1 - URL Shortener]] |
 | Design a news feed | [[06.2 - Social Feed]] |
 | Design a chat system | [[06.3 - Chat System]] · [[WebSocket]] |
 | Design a notification system | [[06.7 - Notification Platform]] · [[04.10 - Notification System]] |
 | Design a payment system | [[06.6 - Payment Gateway]] |
 | Consistent hashing | [[01.11 - Distributed Concepts]] · [[03.1 - Load Balancers]] |
-| L4 vs L7 load balancing | [[03.1 - Load Balancers]] · [[03.10 - Proxies and Load Balancers]] |
-| Idempotency and safe retries | [[03.4 - Idempotency and Safe Retries]] · [[07.5 - Idempotency Keys and Deduplication]] |
-| Timeouts, retries, circuit breakers | [[11.2 - Timeouts Retries and Jitter]] · [[11.3 - Circuit Breakers and Bulkheads]] |
+| L4 vs L7 load balancing | [[03.1 - Load Balancers]] · [[04.10 - Proxies and Load Balancers]] |
+| Idempotency and safe retries | [[04.4 - Idempotency and Safe Retries]] · [[08.5 - Idempotency Keys and Deduplication]] |
+| Timeouts, retries, circuit breakers | [[12.2 - Timeouts Retries and Jitter]] · [[12.3 - Circuit Breakers and Bulkheads]] |
 | CQRS and event sourcing | [[02.22 - CQRS]] · [[02.23 - Event Sourcing]] |
-| Leader election and consensus | [[07.6 - Leader Election and Coordination]] · [[01.11 - Distributed Concepts]] |
+| Leader election and consensus | [[08.6 - Leader Election and Coordination]] · [[01.11 - Distributed Concepts]] |
 | Communicating tradeoffs | [[07.3 - Communicating Tradeoffs]] · [[05.1 - Tradeoff Evaluation]] |
 
 ---

@@ -749,4 +749,4 @@ Saga         → pattern for distributed transactions across microservices
 
 ---
 
-_See also: [[Redis - Complete Guide]]_
+_See also: [[Redis]]_

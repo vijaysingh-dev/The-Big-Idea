@@ -2,8 +2,6 @@
 
 ---
 
-# 03 — Agentic AI and Production LLMOps
-
 > Agents, tools, LangGraph, memory, multi-agent systems, MCP, security, evals, observability and cost.
 
 ---
@@ -523,7 +521,7 @@ Treat the provider like any flaky dependency:
 
 **What a strong answer shows:** Standard resilience engineering applied cleanly to LLMs.
 
-**Go deeper:** [[10.4 - Model Routing and Multi-Model Architecture]] · [[11.2 - Timeouts Retries and Jitter]] · [[11.3 - Circuit Breakers and Bulkheads]]
+**Go deeper:** [[10.4 - Model Routing and Multi-Model Architecture]] · [[12.2 - Timeouts Retries and Jitter]] · [[12.3 - Circuit Breakers and Bulkheads]]
 
 ---
 

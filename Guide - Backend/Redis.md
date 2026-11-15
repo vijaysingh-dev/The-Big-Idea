@@ -680,4 +680,4 @@ DEBUG SLEEP 0                  # Don't ever run this in prod
 
 ---
 
-_Next: [[Kafka - Complete Guide]]_
+_Next: [[Kafka]]_

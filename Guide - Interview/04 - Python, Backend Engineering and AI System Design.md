@@ -2,8 +2,6 @@
 
 ---
 
-# 04 — Python, Backend Engineering and AI System Design
-
 > Python internals and asyncio, the FastAPI request lifecycle, API and database design including pagination, resilience, testing, and AI system design.
 
 ---
@@ -376,7 +374,7 @@ async def create_note(
 
 **What a strong answer shows:** You know the hops outside Python, the ASGI contract, and FastAPI's own steps (DI caching, 422 vs 500, the threadpool fork), and you can name where each one fails in production.
 
-**Go deeper:** [[01.13 - FastAPI Request Lifecycle End to End]] (the full version, with a debugging map) · [[01.9 - ASGI and How Uvicorn Serves a Request]] · [[15.3 - Reading Uvicorn and Starlette]] · [[03.10 - Proxies and Load Balancers]] · [[03.11 - Timeouts and Deadlines Across Hops]]
+**Go deeper:** [[01.13 - FastAPI Request Lifecycle End to End]] (the full version, with a debugging map) · [[01.9 - ASGI and How Uvicorn Serves a Request]] · [[16.3 - Reading Uvicorn and Starlette]] · [[04.10 - Proxies and Load Balancers]] · [[04.11 - Timeouts and Deadlines Across Hops]]
 
 **Resource:** [FastAPI source: `fastapi/routing.py`](https://github.com/fastapi/fastapi/blob/master/fastapi/routing.py). `get_request_handler` *is* the FastAPI part of the lifecycle, and it's short. See also the [ASGI spec](https://asgi.readthedocs.io/en/latest/specs/main.html).
 
@@ -417,7 +415,7 @@ Practical concerns:
 
 **What a strong answer shows:** A clear choice with reasons, plus real-world issues like disconnects and buffering.
 
-**Go deeper:** [[04.1 - Choosing a Realtime Transport]] · [[04.2 - Server Sent Events]] · [[04.4 - Streaming LLM Responses]] · [[WebSocket]]
+**Go deeper:** [[05.1 - Choosing a Realtime Transport]] · [[05.2 - Server Sent Events]] · [[05.4 - Streaming LLM Responses]] · [[WebSocket]]
 
 ---
 
@@ -438,7 +436,7 @@ Practical concerns:
 
 **What a strong answer shows:** Practical conventions, especially idempotency, pagination and async job patterns.
 
-**Go deeper:** [[05.1 - REST Done Properly]] · [[05.3 - Error Design]] · [[03.4 - Idempotency and Safe Retries]]
+**Go deeper:** [[06.1 - REST Done Properly]] · [[06.3 - Error Design]] · [[04.4 - Idempotency and Safe Retries]]
 
 ---
 
@@ -458,7 +456,7 @@ Practical concerns:
 
 **What a strong answer shows:** You don't mix up AuthN and AuthZ, and you know JWT's revocation tradeoff.
 
-**Go deeper:** [[14.1 - AuthN vs AuthZ]] · [[14.2 - Sessions Tokens and Rotation]] · [[14.3 - OAuth2 and OIDC]]
+**Go deeper:** [[15.1 - AuthN vs AuthZ]] · [[15.2 - Sessions Tokens and Rotation]] · [[15.3 - OAuth2 and OIDC]]
 
 ---
 
@@ -481,7 +479,7 @@ Practical concerns:
 
 **What a strong answer shows:** Practical fluency with performance and correctness: indexes, N+1, transactions, pooling.
 
-**Go deeper:** [[06.3 - Indexes Deep Dive]] · [[06.6 - Transactions and Isolation Levels]] · [[06.8 - Locking and Deadlocks]] · [[06.17 - Database Anti Patterns]] · for "optimize a DB at 10M req/s" see [[05 - System Design and Distributed Systems#Q7. Your DB-backed API serves 10M requests/second and responses take 5 seconds. How do you optimize it?]] and [[06.18 - Fixing a Slow Database at Scale]]
+**Go deeper:** [[07.3 - Indexes Deep Dive]] · [[07.6 - Transactions and Isolation Levels]] · [[07.8 - Locking and Deadlocks]] · [[07.17 - Database Anti Patterns]] · for "optimize a DB at 10M req/s" see [[05 - System Design and Distributed Systems#Q7. Your DB-backed API serves 10M requests/second and responses take 5 seconds. How do you optimize it?]] and [[07.18 - Fixing a Slow Database at Scale]]
 
 ---
 
@@ -601,7 +599,7 @@ async def list_posts(
 
 **What a strong answer shows:** You explain *why* offset degrades (rows read and discarded), you know the tiebreaker and index requirements, and you design the API contract around opaque, bounded, stable cursors.
 
-**Go deeper:** [[05.2 - Versioning Pagination and Filtering]] (cursor design, cost, multiple sort columns, migrating from offset) · [[06.3 - Indexes Deep Dive]] · [[06.17 - Database Anti Patterns#3. Offset Pagination]] · [[02.18 - Iterator]]
+**Go deeper:** [[06.2 - Versioning Pagination and Filtering]] (cursor design, cost, multiple sort columns, migrating from offset) · [[07.3 - Indexes Deep Dive]] · [[07.17 - Database Anti Patterns#3. Offset Pagination]] · [[02.18 - Iterator]]
 
 **Resource:** [Use The Index, Luke — "We need tool support for keyset pagination"](https://use-the-index-luke.com/no-offset), the canonical explanation with benchmarks. Also [Slack Engineering — Evolving API Pagination at Slack](https://slack.engineering/evolving-api-pagination-at-slack/), a real migration from offset to cursors.
 
@@ -628,7 +626,7 @@ async def list_posts(
 
 **What a strong answer shows:** You know the patterns and the failure modes, especially stampedes and stale data.
 
-**Go deeper:** Redis with working code in [[05 - System Design and Distributed Systems#Q6. How do you use Redis? Show me code.]] · [[07.2 - Cache Strategies and Invalidation]] · [[07.3 - Stampede Hot Keys and Negative Caching]] · [[Redis]]
+**Go deeper:** Redis with working code in [[05 - System Design and Distributed Systems#Q6. How do you use Redis? Show me code.]] · [[08.2 - Cache Strategies and Invalidation]] · [[08.3 - Stampede Hot Keys and Negative Caching]] · [[Redis]]
 
 ---
 
@@ -649,7 +647,7 @@ async def list_posts(
 
 **What a strong answer shows:** Idempotency, DLQs and the outbox pattern: the hallmarks of someone who has run queues in production.
 
-**Go deeper:** Kafka in microservices with producer, outbox and consumer code in [[05 - System Design and Distributed Systems#Q4. How do you use a message queue like Kafka in a microservices architecture?]] · [[08.2 - Queue Semantics]] · [[08.6 - Retries Backoff and Dead Letters]] · [[09.3 - The Outbox Pattern]]
+**Go deeper:** Kafka in microservices with producer, outbox and consumer code in [[05 - System Design and Distributed Systems#Q4. How do you use a message queue like Kafka in a microservices architecture?]] · [[09.2 - Queue Semantics]] · [[09.6 - Retries Backoff and Dead Letters]] · [[10.3 - The Outbox Pattern]]
 
 ---
 
@@ -675,7 +673,7 @@ async def list_posts(
 
 **What a strong answer shows:** You treat failure as normal and know how these patterns combine.
 
-**Go deeper:** [[11.2 - Timeouts Retries and Jitter]] · [[11.3 - Circuit Breakers and Bulkheads]] · [[11.6 - Graceful Degradation]]
+**Go deeper:** [[12.2 - Timeouts Retries and Jitter]] · [[12.3 - Circuit Breakers and Bulkheads]] · [[12.6 - Graceful Degradation]]
 
 ---
 
@@ -697,7 +695,7 @@ async def list_posts(
 
 **What a strong answer shows:** A balanced, pragmatic strategy: what to mock, what to test for real.
 
-**Go deeper:** [[10.9 - Testing Microservices]] · [[05.13 - Contract Testing and Schema Evolution]]
+**Go deeper:** [[11.9 - Testing Microservices]] · [[06.13 - Contract Testing and Schema Evolution]]
 
 ---
 
@@ -756,7 +754,7 @@ Python favours simple, pragmatic patterns:
 
 **What a strong answer shows:** Production experience. You'd know how to find the cause of an incident quickly.
 
-**Go deeper:** [[Observability]] · [[12.2 - SLI SLO and Error Budgets]] · [[12.3 - Instrumenting Conduit End to End]]
+**Go deeper:** [[Observability]] · [[13.2 - SLI SLO and Error Budgets]] · [[13.3 - Instrumenting Conduit End to End]]
 
 ---
 

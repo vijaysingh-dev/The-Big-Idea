@@ -2,8 +2,6 @@
 
 ---
 
-# 01 — LLM Fundamentals
-
 > How LLMs work: tokens, attention, inference, training, prompting, and choosing a model.
 
 ---

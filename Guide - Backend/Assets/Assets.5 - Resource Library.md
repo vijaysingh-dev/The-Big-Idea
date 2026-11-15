@@ -40,6 +40,8 @@
 | [Building Microservices, 2nd ed. — Newman](https://samnewman.io/books/building_microservices_2nd_edition/) | Honest about when not to |
 | [Production Ready GraphQL — Giroux](https://book.productionreadygraphql.com/) | Operating GraphQL, including when not to adopt it |
 | [Systems Performance — Gregg](https://www.brendangregg.com/systems-performance-2nd-edition-book.html) | Finding bottlenecks systematically |
+| [Operating Systems: Three Easy Pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/) | **Free.** The best OS textbook: processes, memory, concurrency, persistence |
+| [The Linux Programming Interface — Kerrisk](https://man7.org/tlpi/) | Every syscall a backend uses, with working code |
 | [High Performance Browser Networking](https://hpbn.co/) | **Free.** Networking from TCP to WebRTC |
 | [Relevant Search — Turnbull & Berryman](https://www.manning.com/books/relevant-search) | Measuring and improving search quality |
 | [Observability Engineering](https://www.honeycomb.io/observability-engineering-oreilly-book-2022) | High-cardinality analysis |
@@ -146,7 +148,7 @@
 | [Sentry — transaction ID wraparound](https://blog.sentry.io/transaction-id-wraparound-in-postgres/) | Read before you need to |
 | [Cloudflare postmortems](https://blog.cloudflare.com/tag/postmortem/) | Consistently detailed and technical |
 
-⚠️ **The pattern across almost all of them: the trigger is small and the severity comes from amplification** ([[11.1 - How Systems Fail]]). **Read with that lens.**
+⚠️ **The pattern across almost all of them: the trigger is small and the severity comes from amplification** ([[12.1 - How Systems Fail]]). **Read with that lens.**
 
 ---
 

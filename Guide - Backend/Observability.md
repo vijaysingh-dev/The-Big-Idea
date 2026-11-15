@@ -1187,4 +1187,4 @@ Before going to production, every service should have:
 
 ---
 
-_See also: [[Redis - Complete Guide]] | [[Kafka - Complete Guide]]_
+_See also: [[Redis]] | [[Kafka]]_

@@ -2,8 +2,6 @@
 
 ---
 
-# 02 — Retrieval-Augmented Generation (RAG)
-
 > Every stage of a RAG pipeline: ingestion, chunking, embeddings, vector indexes, hybrid search, reranking, and evaluation with LLM-as-a-judge.
 
 ---

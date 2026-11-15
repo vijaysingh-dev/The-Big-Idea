@@ -1,5 +1,3 @@
-# Interview Guide — Master Index
-
 > **Purpose:** Answers to say out loud in senior backend and AI-engineering interviews. Each question has the answer, code to put on the whiteboard, likely follow-ups, the signal the interviewer wants, links to the vault notes that go deeper, and one external resource.
 >
 > **How this relates to the rest of the vault:** the guides ([[00 - Index (Backend)]], [[00-Index (HLD)]], [[00 - Index (LLD)]], [[00 - Index (AI)]], [[00 - Index (LLM RAG and Agentic AI)]]) are where you *learn* a topic. This guide is where you *rehearse* it. Answers here are deliberately compact, and the **Go deeper** links point at the full treatment.
@@ -25,18 +23,18 @@ The questions from the most recent interview, and where each one is answered.
 
 | # | Question | Answer | Full depth |
 |---|---|---|---|
-| 01 | Message queues in microservices (Kafka) | [[05 - System Design and Distributed Systems]] Q4, plus Q5 for Kafka vs RabbitMQ vs SQS | [[Kafka]] · [[09.3 - The Outbox Pattern]] · [[09.1 - Queue vs Log]] |
+| 01 | Message queues in microservices (Kafka) | [[05 - System Design and Distributed Systems]] Q4, plus Q5 for Kafka vs RabbitMQ vs SQS | [[Kafka]] · [[10.3 - The Outbox Pattern]] · [[10.1 - Queue vs Log]] |
 | 02 | Design patterns | [[06 - Design Principles and Patterns]] Q4 | [[02.0 - Patterns Overview]] |
 | 03 | CAP theorem | [[05 - System Design and Distributed Systems]] Q1 | [[01.5 - CAP and PACELC]] |
 | 04 | Redis, with code | [[05 - System Design and Distributed Systems]] Q6 | [[Redis]] · [[03.5 - Redis Patterns]] |
 | 05 | LLM-as-a-judge: raw, then RAGAS, with code | [[02 - Retrieval-Augmented Generation (RAG)]] Q20 | [[06 - Evaluation]] (sections 3–4) |
-| 06 | Optimize a DB doing 10M req/s that responds in 5 s | [[05 - System Design and Distributed Systems]] Q7 | [[06.18 - Fixing a Slow Database at Scale]] |
+| 06 | Optimize a DB doing 10M req/s that responds in 5 s | [[05 - System Design and Distributed Systems]] Q7 | [[07.18 - Fixing a Slow Database at Scale]] |
 | 07 | What happens to a request in the backend (ASGI + FastAPI) | [[04 - Python, Backend Engineering and AI System Design]] Q9, plus Q8 for `def` vs `async def` | [[01.13 - FastAPI Request Lifecycle End to End]] · [[01.9 - ASGI and How Uvicorn Serves a Request]] |
 | 08 | SOLID principles | [[06 - Design Principles and Patterns]] Q1 | [[01.1 - SOLID Principles]] |
 | 09 | Coroutines, the event loop | [[04 - Python, Backend Engineering and AI System Design]] Q3, plus Q2 for asyncio pitfalls | [[01.4 - Building an Event Loop From Scratch]] · [[01.5 - Coroutines Tasks and Futures]] |
-| 10 | Pagination, app side and DB side | [[04 - Python, Backend Engineering and AI System Design]] Q15 | [[05.2 - Versioning Pagination and Filtering]] |
+| 10 | Pagination, app side and DB side | [[04 - Python, Backend Engineering and AI System Design]] Q15 | [[06.2 - Versioning Pagination and Filtering]] |
 | 11 | Confusing look-alike patterns (Adapter / Strategy / Factory …) | [[06 - Design Principles and Patterns]] Q5–Q7, plus Q3 for principles vs patterns | [[02.25 - Telling Similar Patterns Apart]] |
-| 12 | Consistency, availability and partitioning | [[05 - System Design and Distributed Systems]] Q2 | [[01.6 - Consistency Models]] · [[01.11 - Distributed Concepts]] · [[06.13 - Partitioning and Sharding]] |
+| 12 | Consistency, availability and partitioning | [[05 - System Design and Distributed Systems]] Q2 | [[01.6 - Consistency Models]] · [[01.11 - Distributed Concepts]] · [[07.13 - Partitioning and Sharding]] |
 
 ---
 

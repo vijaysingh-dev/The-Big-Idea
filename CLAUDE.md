@@ -7,8 +7,9 @@ An Obsidian vault of personal study notes, mostly software engineering. It is pl
 | Path | What it is |
 |---|---|
 | `Guide - AI/` | AI engineering: LLMs, fine-tuning, RAG, agents, serving |
-| `Guide - Backend/` | Python runtime, networking, HTTP, DBs, queues, microservices, reliability. Loose topic notes (`Redis.md`, `Kafka.md`, `gRPC.md`, …) sit at the root. |
+| `Guide - Backend/` | Python runtime, operating systems, networking, HTTP, DBs, queues, microservices, reliability. Loose topic notes (`Redis.md`, `Kafka.md`, `gRPC.md`, …) sit at the root. |
 | `Guide - Frontend/` | JavaScript, browser, React |
+| `Guide - Python/` | The Python language (follows Fred Baptiste's Deep Dive Parts 1–4, plus typing, dataclasses, Pydantic, pytest, logging). The runtime/asyncio stays in Backend section 01 |
 | `Guide - RAG and Agentic AI/` | Hands-on RAG/agents course (flat numbered files, capstone "RAGLab") |
 | `Guide - Salesforce/` | Salesforce platform |
 | `Guide - System Design/High Level Design/` | HLD fundamentals, building blocks, case studies |
@@ -26,7 +27,7 @@ An Obsidian vault of personal study notes, mostly software engineering. It is pl
 Every `Guide - <Topic>` folder follows the same shape:
 
 - **One index file at the root:** `00 - Index (<Topic>).md` (HLD uses `00-Index (HLD).md`). It holds the reading order as tables of `| [[note]] | What it covers |`, one table per section. When you add a note, add a row to the index.
-- **Numbered sections and notes:** `NN - Section Name/NN.M - Note Title.md`, e.g. `06 - Databases/06.3 - Indexes Deep Dive.md`. Section folders can nest one level deeper; LLD design patterns do this. A trailing unnumbered `Assets/` folder holds cheatsheets (`Assets.N - Title.md`) and images.
+- **Numbered sections and notes:** `NN - Section Name/NN.M - Note Title.md`, e.g. `07 - Databases/07.3 - Indexes Deep Dive.md`. Section folders can nest one level deeper; LLD design patterns do this. A trailing unnumbered `Assets/` folder holds cheatsheets (`Assets.N - Title.md`) and images.
 - **Note skeleton** (Backend/HLD/LLD style):
   ```
   **Up:** [[<Index>]] | **Prev:** [[<prev note>]]
@@ -48,7 +49,7 @@ Every `Guide - <Topic>` folder follows the same shape:
   **Next:** [[<next note>]]
   ```
   Match the nav style of the guide you are editing. `.tools/vault-fix-nav.pl` detects and rewrites it.
-- **Links:** Obsidian wikilinks by bare note name (`[[06.3 - Indexes Deep Dive]]`). Note names are unique across the vault, so don't add paths. Use `[[Note#Heading]]` to point at a section.
+- **Links:** Obsidian wikilinks by bare note name (`[[07.3 - Indexes Deep Dive]]`). Note names are unique across the vault, so don't add paths. Use `[[Note#Heading]]` to point at a section.
 - **Code:** fenced blocks with a language tag. Python is the default backend language (FastAPI, asyncio, asyncpg, redis-py, aiokafka/confluent-kafka).
 - **Prefer linking to adding.** Coverage is already wide. Before writing a new note, grep for the topic and link to the existing note or extend it. Write a new note only for a real gap.
 

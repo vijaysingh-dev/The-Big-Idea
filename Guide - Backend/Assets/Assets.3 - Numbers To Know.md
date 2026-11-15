@@ -32,7 +32,28 @@
 
 💡 **The ratios that matter:** memory is ~1,000× faster than SSD, SSD is ~10× faster than a datacentre round trip, and a cross-continent trip is ~300× a local one.
 
-⚠️ **On network-attached cloud storage, random reads are 500 µs–2 ms, not 50 µs.** A database fine on local NVMe can be 10–20× slower on an equivalent-throughput cloud volume, because per-operation *latency* differs ([[06.1 - Storage Engines]]).
+⚠️ **On network-attached cloud storage, random reads are 500 µs–2 ms, not 50 µs.** A database fine on local NVMe can be 10–20× slower on an equivalent-throughput cloud volume, because per-operation *latency* differs ([[07.1 - Storage Engines]]).
+
+---
+
+## Operating System
+
+| Operation | Time |
+|---|---|
+| Minimal syscall (`getpid`) | ~100 ns (more with Spectre/Meltdown mitigations) |
+| Uncontended mutex lock/unlock (futex fast path) | ~20 ns |
+| **Thread context switch** | **~1–5 µs**, plus cache warm-up afterward |
+| Minor page fault | ~0.1–1 µs |
+| **Major page fault (NVMe)** | **~100 µs** |
+| `fork` of a 1 GB process | ~1–10 ms (page tables only) |
+| **`fsync` on NVMe / cloud block storage** | **~0.1–2 ms / ~1–10 ms** |
+| Page size / huge page | 4 KB / 2 MB |
+| Default pipe buffer | 64 KB |
+| Default thread stack (virtual) | 8 MB |
+| CFS bandwidth period | 100 ms (`cpu: 1` = 100 ms of CPU per 100 ms) |
+| Exit code for `SIGKILL` / `SIGTERM` | 137 / 143 |
+
+⚠️ **Throttling math:** with `cpu: 1` and 8 busy threads, the quota is gone in 12.5 ms and the container sleeps for the remaining 87.5 ms of every period ([[02.3 - Threads and the Scheduler]]).
 
 ---
 
@@ -50,7 +71,7 @@
 | Pydantic model validation | ~10–50 µs |
 | **GIL switch interval (default)** | **5 ms** |
 
-⚠️ **Serialisation frequently dominates a cache hit.** A 3ms deserialisation against a 5ms database query means the cache barely helps ([[07.2 - Cache Strategies and Invalidation]]).
+⚠️ **Serialisation frequently dominates a cache hit.** A 3ms deserialisation against a 5ms database query means the cache barely helps ([[08.2 - Cache Strategies and Invalidation]]).
 
 💡 **`orjson` is roughly 5× faster than `json` and it is a one-line change.**
 
@@ -84,7 +105,7 @@
 | Single-instance write throughput | 10k–50k/s |
 | **B-tree depth for 100M rows** | **3–4 levels** |
 
-💡 **The connection number is the one people get wrong.** Throughput *peaks* around 20 active connections on 8 cores and declines beyond it ([[06.9 - Connection Pooling and PgBouncer]]).
+💡 **The connection number is the one people get wrong.** Throughput *peaks* around 20 active connections on 8 cores and declines beyond it ([[07.9 - Connection Pooling and PgBouncer]]).
 
 | Health threshold | Value |
 |---|---|
@@ -94,7 +115,7 @@
 | Index bloat (`avg_leaf_density`) | > 80% healthy |
 | Replication lag | < 100MB, or your staleness budget |
 
-⚠️ **`random_page_cost = 4.0` is the default and wrong on SSDs.** Use 1.1 for NVMe, 1.5 for cloud volumes ([[06.5 - The Query Planner]]).
+⚠️ **`random_page_cost = 4.0` is the default and wrong on SSDs.** Use 1.1 for NVMe, 1.5 for cloud volumes ([[07.5 - The Query Planner]]).
 
 ---
 
@@ -108,7 +129,7 @@
 | **Memory per key (small string)** | **~100 bytes overhead** |
 | `KEYS` on 1M keys | ⚠️ **Blocks for seconds** |
 
-⚠️ **Redis is single-threaded per shard.** One hot key means one CPU core, regardless of cluster size ([[07.3 - Stampede Hot Keys and Negative Caching]]).
+⚠️ **Redis is single-threaded per shard.** One hot key means one CPU core, regardless of cluster size ([[08.3 - Stampede Hot Keys and Negative Caching]]).
 
 ---
 
@@ -123,7 +144,7 @@
 | **Consumer rebalance (cooperative-sticky)** | **Sub-second** |
 | Retention storage, 1k msg/s × 1KB | ~86 GB/day |
 
-💡 **The retention arithmetic is what decides Kafka versus Redis Streams.** 90 days at 1k msg/s is ~7.8TB — **which does not fit in memory** ([[09.8 - Kafka Recap and Where It Fits]]).
+💡 **The retention arithmetic is what decides Kafka versus Redis Streams.** 90 days at 1k msg/s is ~7.8TB — **which does not fit in memory** ([[10.8 - Kafka Recap and Where It Fits]]).
 
 ---
 
@@ -141,9 +162,9 @@
 | **gzip ratio, JSON** | **~5–10×** |
 | brotli ratio, JSON | ~10–15× |
 
-💡 **The initial congestion window means the first ~14KB arrives in one round trip.** Keeping a critical response under that is a real latency win ([[02.3 - TCP Connection Lifecycle]]).
+💡 **The initial congestion window means the first ~14KB arrives in one round trip.** Keeping a critical response under that is a real latency win ([[03.3 - TCP Connection Lifecycle]]).
 
-⚠️ **`ndots:5` in Kubernetes means four failed DNS lookups before an external hostname resolves** ([[13.3 - Kubernetes for Backend Engineers]]).
+⚠️ **`ndots:5` in Kubernetes means four failed DNS lookups before an external hostname resolves** ([[14.3 - Kubernetes for Backend Engineers]]).
 
 ---
 
@@ -214,7 +235,7 @@ SLO 99.5%, current error rate 5% → 10× → the 28-day budget is gone in 2.8 d
 | **B-tree index entry** | **~20–40 bytes** |
 | **1536-dim float32 embedding** | **6 KB** |
 
-💡 **Embeddings are large.** 1M documents × 20 chunks × 6KB = **120 GB** of vectors alone ([[16.10 - Phase 9 - RAG and the AI Handoff]]).
+💡 **Embeddings are large.** 1M documents × 20 chunks × 6KB = **120 GB** of vectors alone ([[17.10 - Phase 9 - RAG and the AI Handoff]]).
 
 | Cost (indicative) | |
 |---|---|
@@ -223,7 +244,7 @@ SLO 99.5%, current error rate 5% → 10× → the 28-day budget is gone in 2.8 d
 | Object storage | ~$0.023/GB/month |
 | Managed Postgres (4 vCPU, 16GB) | ~$250/month |
 
-⚠️ **Egress is where the largest surprises live.** Serving files from your application rather than a CDN is often the single biggest avoidable line item ([[13.6 - Cost Awareness]]).
+⚠️ **Egress is where the largest surprises live.** Serving files from your application rather than a CDN is often the single biggest avoidable line item ([[14.6 - Cost Awareness]]).
 
 ---
 

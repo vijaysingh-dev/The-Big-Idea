@@ -45,6 +45,46 @@ Uvicorn cancels the task; `CancelledError` is raised at the next `await`. **A mu
 
 ---
 
+## Operating Systems
+
+**What is a system call, and why does its cost matter?**
+The only way into the kernel: a mode switch to ring 0 and back, roughly 100 ns–1 µs. **One is cheap. Millions of tiny ones show up as high `sys` CPU, which is why buffering, `writev`, `sendfile` and io_uring exist.**
+
+**Process vs thread at the kernel level?**
+Both are `task_struct`s. Threads share an address space, fd table and signal handlers; processes do not. **The kernel schedules threads, not processes.**
+
+**Why is `fork` fast, and why does a forked Python worker's memory grow anyway?**
+Copy-on-write: only page tables are copied. **But CPython writes a refcount into every object it touches, so reading objects dirties their pages and forces copies.** `gc.freeze()` helps.
+
+**Load average is 30 on an 8-core box, and the CPU is 70% idle. What is going on?**
+Linux load counts threads in uninterruptible sleep (`D`), usually waiting on disk or NFS. **It is an I/O problem, not CPU. Check `iostat -x` and PSI.**
+
+**A container shows 30% average CPU, but p99 is terrible. First thing to check?**
+cgroup CPU throttling: `nr_throttled` in `cpu.stat`. **Many threads burn the 100 ms quota in a few ms, then the whole container stalls until the next period.**
+
+**Exit code 137 — what are the two possible causes?**
+128 + 9 = `SIGKILL`. **Either the OOM killer (check `OOMKilled`), or the app ignored `SIGTERM` and was killed after the grace period. Often the PID 1 problem.**
+
+**Why does `docker stop` take 10 seconds for your Python app?**
+The app is PID 1 with no `SIGTERM` handler (PID 1 ignores unhandled signals), or the shell-form `CMD` made `sh` PID 1, and `sh` does not forward signals. **Use the exec form, `exec` in entrypoints, or tini.**
+
+**`write()` returned successfully. Is the data safe?**
+No. It is in the page cache. **Only `fsync` (plus fsyncing the directory after a rename) makes it durable against a machine crash.**
+
+**Why can't asyncio do non-blocking file reads?**
+epoll always reports regular files as ready, so `read` still blocks on disk. **Async file I/O runs in a thread pool (aiofiles, `to_thread`) unless you use io_uring.**
+
+**Why doesn't a Python process's RSS go down after freeing a big dataset?**
+Fragmentation: pymalloc frees an arena only when it is completely empty, and the glibc heap cannot shrink around live chunks. **Do big batch work in a short-lived child process.**
+
+**What are the four conditions for deadlock, and which one do you usually break?**
+Mutual exclusion, hold-and-wait, no preemption, circular wait. **Break circular wait with a global lock order.** The same fix works for Postgres row-update deadlocks.
+
+**Why prefer a Unix domain socket over localhost TCP for nginx → uvicorn?**
+No TCP stack overhead, file-permission access control, no ephemeral ports or TIME_WAIT. **Lower latency and one less thing to exhaust.**
+
+---
+
 ## Networking and HTTP
 
 **Why is a slow dependency worse than a down one?**
